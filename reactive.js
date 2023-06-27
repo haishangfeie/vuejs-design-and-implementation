@@ -11,9 +11,14 @@
 //   obj.text = 'hello vue';
 // }, 1000);
 
-function effect() {
-  console.log('--effect--');
-  document.body.innerText = obj.text;
+/**
+ * 当前effect是硬编码实现的响应式
+ * 现在希望effect可以不是硬编码
+ */
+let activeEffect;
+function effect(fn) {
+  activeEffect = fn;
+  fn();
 }
 const bucket = new Set();
 const data = {
@@ -21,7 +26,7 @@ const data = {
 };
 const obj = new Proxy(data, {
   get(target, key) {
-    bucket.add(effect);
+    bucket.add(activeEffect);
     return target[key];
   },
   set(target, key, newVal) {
@@ -32,7 +37,10 @@ const obj = new Proxy(data, {
 });
 
 // 执行副作用函数，触发getter
-effect();
+effect(() => {
+  console.log('--effect--');
+  document.body.innerText = obj.text;
+});
 setTimeout(() => {
   obj.text = 'hello vue';
 }, 1000);
