@@ -16,6 +16,7 @@ function effect(fn) {
     fn();
     activeEffect = null;
   };
+  // 重置数组
   effectFn.deps = [];
   effectFn();
 }
@@ -60,6 +61,7 @@ function trigger(target, key) {
   if (!deps) {
     return;
   }
+  // 避免无限循环
   const effects = new Set(deps);
   effects.forEach((fn) => fn());
 }
@@ -74,6 +76,6 @@ setTimeout(() => {
   obj.ok = false;
   setTimeout(() => {
     console.log('----');
-    obj.text = 'hhh';
+    obj.text = '修改也不会触发副作用';
   }, 1000);
 }, 1000);
