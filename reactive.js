@@ -2,10 +2,22 @@
  * 当前分支切换会产生遗留的副作用函数，下面的目标就是处理因为遗留副作用函数导致的不必要的副作用函数执行
  */
 let activeEffect;
+function cleanup(effectFn) {
+  const deps = effectFn.deps;
+  deps.forEach((effects) => {
+    effects.delete(effectFn);
+  });
+  deps.length = 0;
+}
 function effect(fn) {
-  activeEffect = fn;
-  fn();
-  activeEffect = null;
+  const effectFn = () => {
+    cleanup(effectFn);
+    activeEffect = effectFn;
+    fn();
+    activeEffect = null;
+  };
+  effectFn.deps = [];
+  effectFn();
 }
 const bucket = new WeakMap();
 const data = {
@@ -36,6 +48,7 @@ function track(target, key) {
   }
   const deps = targetMap.get(key);
   deps.add(activeEffect);
+  activeEffect.deps.push(deps);
 }
 
 function trigger(target, key) {
@@ -47,7 +60,8 @@ function trigger(target, key) {
   if (!deps) {
     return;
   }
-  deps.forEach((fn) => fn());
+  const effects = new Set(deps);
+  effects.forEach((fn) => fn());
 }
 
 // 执行副作用函数，触发getter
@@ -59,6 +73,7 @@ effect(() => {
 setTimeout(() => {
   obj.ok = false;
   setTimeout(() => {
+    console.log('----');
     obj.text = 'hhh';
   }, 1000);
 }, 1000);
