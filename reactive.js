@@ -1,5 +1,5 @@
 /**
- * 希望只在对应属性改变时才触发响应式
+ * 当前分支切换会产生遗留的副作用函数，下面的目标就是处理因为遗留副作用函数导致的不必要的副作用函数执行
  */
 let activeEffect;
 function effect(fn) {
@@ -10,7 +10,7 @@ function effect(fn) {
 const bucket = new WeakMap();
 const data = {
   text: 'hello world',
-  text2: 'text2',
+  ok: true,
 };
 const obj = new Proxy(data, {
   get(target, key) {
@@ -53,13 +53,12 @@ function trigger(target, key) {
 // 执行副作用函数，触发getter
 effect(() => {
   console.log('--effect1--');
-  document.body.innerText = obj.text;
+  document.body.innerText = obj.ok ? obj.text : 'not';
 });
-effect(() => {
-  console.log('--effect2--');
-  console.log('obj.text2', obj.text2);
-});
+
 setTimeout(() => {
-  obj.text = 'hello vue';
-  // obj.other = 'hhh';
+  obj.ok = false;
+  setTimeout(() => {
+    obj.text = 'hhh';
+  }, 1000);
 }, 1000);
