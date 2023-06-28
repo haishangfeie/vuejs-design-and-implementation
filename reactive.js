@@ -14,33 +14,41 @@ const data = {
 };
 const obj = new Proxy(data, {
   get(target, key) {
-    if (!activeEffect) {
-      return target[key];
-    }
-    if (!bucket.has(target)) {
-      bucket.set(target, new Map());
-    }
-    const targetMap = bucket.get(target);
-    if (!targetMap.has(key)) {
-      targetMap.set(key, new Set());
-    }
-    const deps = targetMap.get(key);
-    deps.add(activeEffect);
+    track(target, key);
     return target[key];
   },
   set(target, key, newVal) {
     target[key] = newVal;
-    const targetMap = bucket.get(target);
-    if (!targetMap) {
-      return;
-    }
-    const deps = targetMap.get(key);
-    if (!deps) {
-      return;
-    }
-    deps.forEach((fn) => fn());
+    trigger(target, key);
   },
 });
+
+function track(target, key) {
+  if (!activeEffect) {
+    return target[key];
+  }
+  if (!bucket.has(target)) {
+    bucket.set(target, new Map());
+  }
+  const targetMap = bucket.get(target);
+  if (!targetMap.has(key)) {
+    targetMap.set(key, new Set());
+  }
+  const deps = targetMap.get(key);
+  deps.add(activeEffect);
+}
+
+function trigger(target, key) {
+  const targetMap = bucket.get(target);
+  if (!targetMap) {
+    return;
+  }
+  const deps = targetMap.get(key);
+  if (!deps) {
+    return;
+  }
+  deps.forEach((fn) => fn());
+}
 
 // 执行副作用函数，触发getter
 effect(() => {
