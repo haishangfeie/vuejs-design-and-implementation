@@ -25,8 +25,7 @@ function effect(fn) {
 }
 const bucket = new WeakMap();
 const data = {
-  text: 'hello world',
-  text2: 'text2',
+  val: 1,
 };
 const obj = new Proxy(data, {
   get(target, key) {
@@ -137,3 +136,8 @@ function trigger(target, key) {
 //     obj.text2 = '2222';
 //   }, 1000);
 // }, 1000);
+
+effect(() => {
+  console.log('无限循环');
+  obj.val = obj.val + 1;
+});
