@@ -2,6 +2,7 @@
  * 当前的实现并不支持effect的嵌套
  */
 let activeEffect;
+const stack = [];
 function cleanup(effectFn) {
   const deps = effectFn.deps;
   deps.forEach((effects) => {
@@ -13,8 +14,10 @@ function effect(fn) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
+    stack.push(effectFn);
     fn();
-    activeEffect = null;
+    stack.pop(effectFn);
+    activeEffect = stack[stack.length - 1];
   };
   // 重置数组
   effectFn.deps = [];
