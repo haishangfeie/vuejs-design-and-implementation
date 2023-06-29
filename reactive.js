@@ -1,5 +1,5 @@
 /**
- * 当前分支切换会产生遗留的副作用函数，下面的目标就是处理因为遗留副作用函数导致的不必要的副作用函数执行
+ * 当前的实现并不支持effect的嵌套
  */
 let activeEffect;
 function cleanup(effectFn) {
@@ -23,7 +23,7 @@ function effect(fn) {
 const bucket = new WeakMap();
 const data = {
   text: 'hello world',
-  ok: true,
+  text2: 'text2',
 };
 const obj = new Proxy(data, {
   get(target, key) {
@@ -66,16 +66,48 @@ function trigger(target, key) {
   effects.forEach((fn) => fn());
 }
 
-// 执行副作用函数，触发getter
-effect(() => {
-  console.log('--effect1--');
-  document.body.innerText = obj.ok ? obj.text : 'not';
-});
+// // 执行副作用函数，触发getter
+// effect(() => {
+//   console.log('--effect1--');
+//   document.body.innerText = obj.ok ? obj.text : 'not';
+// });
 
+// setTimeout(() => {
+//   obj.ok = false;
+//   setTimeout(() => {
+//     console.log('----');
+//     obj.text = '修改也不会触发副作用';
+//   }, 1000);
+// }, 1000);
+
+effect(() => {
+  console.log('--effect1');
+  effect(() => {
+    console.log('--effect2');
+    console.log('---obj.text2', obj.text2);
+  });
+  console.log('---obj.text', obj.text);
+});
 setTimeout(() => {
-  obj.ok = false;
-  setTimeout(() => {
-    console.log('----');
-    obj.text = '修改也不会触发副作用';
-  }, 1000);
+  console.log('1秒后');
+  obj.text = 'hhh';
 }, 1000);
+/**
+ * 不支持嵌套时的结果：
+ * --effect1
+ * --effect2
+ * ---obj.text2 text2
+ * ---obj.text hello world
+ * 1秒后
+ * -------------------
+ * 期望的结果：
+ * --effect1
+ * --effect2
+ * ---obj.text2 text2
+ * ---obj.text hello world
+ * 1秒后
+ * --effect1
+ * --effect2
+ * ---obj.text2 text2
+ * ---obj.text hhh
+ */
