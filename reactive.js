@@ -11,16 +11,17 @@ function cleanup(effectFn) {
   });
   deps.length = 0;
 }
-function effect(fn) {
+function effect(fn, options) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
     stack.push(effectFn);
     fn();
     stack.pop(effectFn);
+    // 重置数组
     activeEffect = stack[stack.length - 1];
   };
-  // 重置数组
+  effectFn.options = options;
   effectFn.deps = [];
   effectFn();
 }
@@ -57,7 +58,11 @@ function trigger(target, key) {
     if (fn === activeEffect) {
       return;
     }
-    fn();
+    if (fn.options && fn.options.scheduler) {
+      fn.options.scheduler(fn);
+    } else {
+      fn();
+    }
   });
 }
 
@@ -149,9 +154,14 @@ const obj = new Proxy(data, {
     trigger(target, key);
   },
 });
+const options = {
+  scheduler: (fn) => {
+    setTimeout(fn);
+  },
+};
 effect(() => {
   console.log(obj.foo);
-});
+}, options);
 obj.foo++;
 console.log('end');
 /**
