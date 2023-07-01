@@ -1,5 +1,6 @@
 /**
- * 当前的实现并不支持effect的嵌套
+ * 接下来要支持调度执行
+ * 也就是控制副作用函数执行的时机、次数以及方式
  */
 let activeEffect;
 const stack = [];
@@ -24,19 +25,6 @@ function effect(fn) {
   effectFn();
 }
 const bucket = new WeakMap();
-const data = {
-  val: 1,
-};
-const obj = new Proxy(data, {
-  get(target, key) {
-    track(target, key);
-    return target[key];
-  },
-  set(target, key, newVal) {
-    target[key] = newVal;
-    trigger(target, key);
-  },
-});
 
 function track(target, key) {
   if (!activeEffect) {
@@ -65,7 +53,12 @@ function trigger(target, key) {
   }
   // 避免无限循环
   const effects = new Set(deps);
-  effects.forEach((fn) => fn());
+  effects.forEach((fn) => {
+    if (fn === activeEffect) {
+      return;
+    }
+    fn();
+  });
 }
 
 // // 执行副作用函数，触发getter
@@ -137,7 +130,31 @@ function trigger(target, key) {
 //   }, 1000);
 // }, 1000);
 
-effect(() => {
-  console.log('无限循环');
-  obj.val = obj.val + 1;
+// effect(() => {
+//   console.log('无限循环');
+//   obj.val = obj.val + 1;
+// });
+
+// 调度执行
+const data = {
+  foo: 1,
+};
+const obj = new Proxy(data, {
+  get(target, key) {
+    track(target, key);
+    return target[key];
+  },
+  set(target, key, newVal) {
+    target[key] = newVal;
+    trigger(target, key);
+  },
 });
+effect(() => {
+  console.log(obj.foo);
+});
+obj.foo++;
+console.log('end');
+/**
+ * 默认输出是：1->2->end
+ * 希望利用调度变成：1->end->2
+ */
