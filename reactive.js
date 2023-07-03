@@ -140,7 +140,36 @@ function trigger(target, key) {
 //   obj.val = obj.val + 1;
 // });
 
-// 调度执行
+// // 调度执行
+// const data = {
+//   foo: 1,
+// };
+// const obj = new Proxy(data, {
+//   get(target, key) {
+//     track(target, key);
+//     return target[key];
+//   },
+//   set(target, key, newVal) {
+//     target[key] = newVal;
+//     trigger(target, key);
+//   },
+// });
+// const options = {
+//   scheduler: (fn) => {
+//     setTimeout(fn);
+//   },
+// };
+// effect(() => {
+//   console.log(obj.foo);
+// }, options);
+// obj.foo++;
+// console.log('end');
+/**
+ * 默认输出是：1->2->end
+ * 希望利用调度变成：1->end->2
+ */
+
+// 调度执行-控制次数
 const data = {
   foo: 1,
 };
@@ -154,17 +183,40 @@ const obj = new Proxy(data, {
     trigger(target, key);
   },
 });
+
+let queue = [];
+let doing = false;
 const options = {
   scheduler: (fn) => {
-    setTimeout(fn);
+    addQueue(fn);
   },
 };
 effect(() => {
   console.log(obj.foo);
 }, options);
 obj.foo++;
+obj.foo++;
 console.log('end');
-/**
- * 默认输出是：1->2->end
- * 希望利用调度变成：1->end->2
- */
+
+function addQueue(fn) {
+  queue.push(fn);
+  queue = [...new Set(queue)];
+  if (doing) {
+    return;
+  }
+  scheduleQueue();
+}
+
+function scheduleQueue() {
+  doing = true;
+  let chain = Promise.resolve();
+  chain
+    .then(() => {
+      queue.forEach((fn) => {
+        fn();
+      });
+    })
+    .then(() => {
+      doing = false;
+    });
+}
