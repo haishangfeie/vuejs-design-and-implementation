@@ -184,11 +184,12 @@ const obj = new Proxy(data, {
   },
 });
 
-let queue = [];
-let doing = false;
+let jobQueue = new Set();
+let isFlushing = false;
 const options = {
   scheduler: (fn) => {
-    addQueue(fn);
+    jobQueue.add(fn);
+    flushJob();
   },
 };
 effect(() => {
@@ -198,25 +199,19 @@ obj.foo++;
 obj.foo++;
 console.log('end');
 
-function addQueue(fn) {
-  queue.push(fn);
-  queue = [...new Set(queue)];
-  if (doing) {
+function flushJob() {
+  if (isFlushing) {
     return;
   }
-  scheduleQueue();
-}
-
-function scheduleQueue() {
-  doing = true;
+  isFlushing = true;
   let chain = Promise.resolve();
   chain
     .then(() => {
-      queue.forEach((fn) => {
+      jobQueue.forEach((fn) => {
         fn();
       });
     })
-    .then(() => {
-      doing = false;
+    .finally(() => {
+      isFlushing = false;
     });
 }
