@@ -1,6 +1,5 @@
 /**
- * 接下来要支持调度执行
- * 也就是控制副作用函数执行的时机、次数以及方式
+ * 支持副作用函数不立即执行
  */
 let activeEffect;
 const stack = [];
@@ -23,7 +22,10 @@ function effect(fn, options) {
   };
   effectFn.options = options;
   effectFn.deps = [];
-  effectFn();
+  if (!options.lazy) {
+    effectFn();
+  }
+  return effectFn;
 }
 const bucket = new WeakMap();
 
@@ -169,7 +171,7 @@ function trigger(target, key) {
  * 希望利用调度变成：1->end->2
  */
 
-// 调度执行-控制次数
+/* // 调度执行-控制次数
 const data = {
   foo: 1,
 };
@@ -218,4 +220,31 @@ function flushJob() {
         flushJob();
       }
     });
-}
+} */
+
+// 支持lazy
+const data = {
+  foo: 1,
+};
+const obj = new Proxy(data, {
+  get(target, key) {
+    track(target, key);
+    return target[key];
+  },
+  set(target, key, newVal) {
+    target[key] = newVal;
+    trigger(target, key);
+  },
+});
+const effectFn = effect(
+  () => {
+    console.log(obj.foo);
+  },
+  {
+    lazy: true,
+  }
+);
+
+setTimeout(() => {
+  effectFn();
+}, 1000);
