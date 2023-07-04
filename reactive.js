@@ -210,8 +210,12 @@ function flushJob() {
       jobQueue.forEach((fn) => {
         fn();
       });
+      jobQueue.clear()
     })
     .finally(() => {
       isFlushing = false;
+      if (jobQueue.size) {
+        flushJob();
+      }
     });
 }
