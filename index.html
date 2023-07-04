@@ -7,7 +7,45 @@
 </head>
 <body>
   <h1>逐步实现响应式</h1>
-  <script src="./reactive.js">
+  <!-- <script src="./reactive.js">
+      </script> -->
+  <script>
+    let jobQueue = new Set();
+    let isFlushing = false;
+    function flushJob() {
+      console.log('---1-进来')
+      if (isFlushing) {
+        console.log('---1-阻止执行')
+        return;
+      }
+      console.log('---1-正常执行')
+      isFlushing = true;
+      let chain = Promise.resolve();
+      chain
+        .then(() => {
+          jobQueue = new Set()
+          console.log('---1-执行中')
+        })
+        .finally(() => {
+          isFlushing = false;
+          console.log('---1-执行完成', jobQueue.size)
+          if (jobQueue.size) {
+            flushJob()
+          }
+        });
+    }
+    jobQueue.add(1)
+    flushJob()
+    let chain2 = Promise.resolve();
+    chain2
+      .then(() => {
+        console.log('---2-执行中')
+        jobQueue.add(1)
+        flushJob()
+      })
+      .finally(() => {
+
+      });
   </script>
 </body>
 </html>
