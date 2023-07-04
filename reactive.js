@@ -267,10 +267,23 @@ const obj = new Proxy(data, {
 });
 
 function computed(getter) {
-  const effectFn = effect(getter, { lazy: true });
+  let _value;
+  let dirty = true;
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler: () => {
+      dirty = true;
+    },
+  });
   const obj = {
     get value() {
-      return effectFn();
+      if (!dirty) {
+        return _value;
+      }
+      console.log('重新计算');
+      dirty = false;
+      _value = effectFn();
+      return _value;
     },
   };
   return obj;
@@ -278,8 +291,14 @@ function computed(getter) {
 const c = computed(() => {
   return obj.a + obj.b;
 });
+console.log(c.value);
 setTimeout(() => {
-  console.log(c.value);
+  console.log('1秒后');
   obj.a++;
   console.log(c.value);
+  setTimeout(() => {
+    console.log(c.value);
+    obj.a++;
+    console.log(c.value);
+  }, 1000);
 }, 1000);
