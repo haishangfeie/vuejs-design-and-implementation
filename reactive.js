@@ -1,5 +1,5 @@
 /**
- * 支持副作用函数不立即执行
+ * 实现计算属性
  */
 let activeEffect;
 const stack = [];
@@ -15,10 +15,11 @@ function effect(fn, options) {
     cleanup(effectFn);
     activeEffect = effectFn;
     stack.push(effectFn);
-    fn();
+    const res = fn();
     stack.pop(effectFn);
     // 重置数组
     activeEffect = stack[stack.length - 1];
+    return res;
   };
   effectFn.options = options;
   effectFn.deps = [];
@@ -222,7 +223,7 @@ function flushJob() {
     });
 } */
 
-// 支持lazy
+/* // 支持lazy
 const data = {
   foo: 1,
 };
@@ -247,4 +248,38 @@ const effectFn = effect(
 
 setTimeout(() => {
   effectFn();
+}, 1000); */
+
+// 计算属性
+const data = {
+  a: 1,
+  b: 3,
+};
+const obj = new Proxy(data, {
+  get(target, key) {
+    track(target, key);
+    return target[key];
+  },
+  set(target, key, newVal) {
+    target[key] = newVal;
+    trigger(target, key);
+  },
+});
+
+function computed(getter) {
+  const effectFn = effect(getter, { lazy: true });
+  const obj = {
+    get value() {
+      return effectFn();
+    },
+  };
+  return obj;
+}
+const c = computed(() => {
+  return obj.a + obj.b;
+});
+setTimeout(() => {
+  console.log(c.value);
+  obj.a++;
+  console.log(c.value);
 }, 1000);
