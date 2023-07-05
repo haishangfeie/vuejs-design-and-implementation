@@ -10,7 +10,7 @@ function cleanup(effectFn) {
   });
   deps.length = 0;
 }
-function effect(fn, options) {
+function effect(fn, options = {}) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
@@ -251,6 +251,29 @@ setTimeout(() => {
 }, 1000); */
 
 // 计算属性
+function computed(getter) {
+  let _value;
+  let dirty = true;
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler: () => {
+      dirty = true;
+      trigger(obj, 'value');
+    },
+  });
+  const obj = {
+    get value() {
+      if (!dirty) {
+        return _value;
+      }
+      dirty = false;
+      _value = effectFn();
+      track(obj, 'value');
+      return _value;
+    },
+  };
+  return obj;
+}
 const data = {
   a: 1,
   b: 3,
@@ -266,29 +289,7 @@ const obj = new Proxy(data, {
   },
 });
 
-function computed(getter) {
-  let _value;
-  let dirty = true;
-  const effectFn = effect(getter, {
-    lazy: true,
-    scheduler: () => {
-      dirty = true;
-    },
-  });
-  const obj = {
-    get value() {
-      if (!dirty) {
-        return _value;
-      }
-      console.log('重新计算');
-      dirty = false;
-      _value = effectFn();
-      return _value;
-    },
-  };
-  return obj;
-}
-const c = computed(() => {
+/* const c = computed(() => {
   return obj.a + obj.b;
 });
 console.log(c.value);
@@ -301,4 +302,13 @@ setTimeout(() => {
     obj.a++;
     console.log(c.value);
   }, 1000);
-}, 1000);
+}, 1000); */
+
+// 计算属性变化时可以触发副作用
+const c = computed(() => {
+  return obj.a + obj.b;
+});
+effect(() => {
+  console.log(c.value);
+});
+obj.b++;
