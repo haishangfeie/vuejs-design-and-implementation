@@ -1,8 +1,7 @@
 {
-  "name": "reactive",
+  "name": "vuejs-design-and-implementation",
   "version": "1.0.0",
   "description": "",
-  "main": "reactive.js",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
