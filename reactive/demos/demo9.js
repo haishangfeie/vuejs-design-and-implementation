@@ -15,7 +15,6 @@ const effectFn = effect(
 );
 
 setTimeout(() => {
-  console.log('1秒后执行effectFn才会执行副作用函数');
-
+  console.log('1秒后手动执行副作用函数');
   effectFn();
 }, 1000);

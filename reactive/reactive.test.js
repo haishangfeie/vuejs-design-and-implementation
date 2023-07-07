@@ -183,8 +183,78 @@ describe('响应式', () => {
       effectFn();
       expect(fn).toHaveBeenCalledTimes(1);
     });
+    test('手动执行副作用函数时可以拿到副作用函数返回值', () => {
+      const obj = reactive({
+        a: 1,
+        b: 3,
+      });
+      const fn = jest.fn(() => {
+        return obj.a + obj.b;
+      });
+      const effectFn = effect(fn, { lazy: true });
+      expect(fn).toHaveBeenCalledTimes(0);
+      expect(effectFn()).toBe(4);
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
   });
   describe('computed', () => {
-    
+    test('计算属性-懒计算', () => {
+      const obj = reactive({
+        a: 1,
+        b: 3,
+      });
+      const getter = jest.fn(() => {
+        return obj.a + obj.b;
+      });
+      const sumRes = computed(getter);
+      expect(getter).toHaveBeenCalledTimes(0);
+      const a = sumRes.value;
+      expect(getter).toHaveBeenCalledTimes(1);
+      expect(a).toBe(4);
+    });
+    test('计算属性-值缓存', () => {
+      const obj = reactive({
+        a: 1,
+        b: 3,
+      });
+      const getter = jest.fn(() => {
+        return obj.a + obj.b;
+      });
+      const sumRes = computed(getter);
+      expect(getter).toHaveBeenCalledTimes(0);
+      let a;
+      a = sumRes.value;
+      expect(getter).toHaveBeenCalledTimes(1);
+      expect(a).toBe(4);
+      a = sumRes.value;
+      a = sumRes.value;
+      expect(getter).toHaveBeenCalledTimes(1);
+      expect(a).toBe(4);
+      obj.a++;
+      expect(getter).toHaveBeenCalledTimes(1);
+      a = sumRes.value;
+      expect(getter).toHaveBeenCalledTimes(2);
+      expect(a).toBe(5);
+    });
+    test('计算属性-副作用函数中读取计算属性，计算属性变化时可以触发副作用函数', () => {
+      const obj = reactive({
+        a: 1,
+        b: 3,
+      });
+      const c = computed(() => {
+        return obj.a + obj.b;
+      });
+      let val;
+      const fn = jest.fn(() => {
+        val = c.value;
+      });
+      effect(fn);
+      console.log('修改obj.b，副作用函数可以被触发');
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(val).toBe(4);
+      obj.b++;
+      expect(fn).toHaveBeenCalledTimes(2);
+      expect(val).toBe(5);
+    });
   });
 });
