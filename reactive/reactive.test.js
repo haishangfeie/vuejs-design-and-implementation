@@ -1,4 +1,4 @@
-import { effect, reactive, computed } from './reactive';
+import { effect, reactive, computed, watch } from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
   describe('effect', () => {
@@ -255,6 +255,20 @@ describe('响应式', () => {
       obj.b++;
       expect(fn).toHaveBeenCalledTimes(2);
       expect(val).toBe(5);
+    });
+  });
+  describe('watch', () => {
+    test('watch 响应式对象变化时可以触发handler', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn();
+      watch(obj, () => {
+        fn();
+      });
+      expect(fn).toHaveBeenCalledTimes(0);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(1);
     });
   });
 });

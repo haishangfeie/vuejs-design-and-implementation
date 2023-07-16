@@ -78,7 +78,7 @@ export const reactive = (data) => {
     set(target, key, newVal) {
       target[key] = newVal;
       trigger(target, key);
-      return true
+      return true;
     },
   });
 };
@@ -106,4 +106,40 @@ export function computed(getter) {
     },
   };
   return obj;
+}
+
+// watch
+export function watch(obj, handler) {
+  effect(() => traverse(obj), {
+    scheduler: () => {
+      handler();
+    },
+  });
+}
+// 递归遍历
+function traverse(obj, seen = new Set()) {
+  if (!isObject(obj) || seen.has(obj)) {
+    return;
+  }
+  // 避免循环引用导致死循环
+  seen.add(obj);
+  // 暂时不考虑数组等其他结构
+  // if (Array.isArray(obj)) {
+  //   for (let i = 0; i < obj.length; i++) {
+  //     traverse(obj[i]);
+  //     return;
+  //   }
+  // }
+  if (typeof obj === 'object') {
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        traverse(obj[key], seen);
+      }
+    }
+    return obj;
+  }
+}
+
+function isObject(obj) {
+  return obj !== null && typeof obj === 'object';
 }
