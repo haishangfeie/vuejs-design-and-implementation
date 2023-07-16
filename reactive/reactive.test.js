@@ -321,5 +321,22 @@ describe('响应式', () => {
       expect(fn.mock.calls[1][0]).toBe('hello vue');
       expect(fn.mock.calls[1][1]).toBe('hello world');
     });
+    test('watch 执行时机支持异步执行', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn((newVal, oldVal) => {});
+      watch(() => obj.text, fn, {
+        flush: 'post',
+      });
+      expect.assertions(4); // 指明会触发4次断言
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(0);
+      return Promise.resolve().then(() => {
+        expect(fn).toHaveBeenCalledTimes(1);
+        expect(fn.mock.calls[0][0]).toBe('hello vue');
+        expect(fn.mock.calls[0][1]).toBe('hello world');
+      });
+    });
   });
 });

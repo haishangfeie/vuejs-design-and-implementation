@@ -109,6 +109,14 @@ export function computed(getter) {
 }
 
 // watch
+/**
+ *
+ * @param {*} source
+ * @param {*} handler
+ * @param {*} options
+ * @param {boolean} options.immediate
+ * @param {string} options.flush - 只支持 'post'|'sync'，当前无法区分pre和post
+ */
 export function watch(source, handler, options = {}) {
   let getter;
   if (typeof source === 'function') {
@@ -117,17 +125,25 @@ export function watch(source, handler, options = {}) {
     getter = () => traverse(source);
   }
   let newVal, oldVal;
-  const scheduler = () => {
+  const job = () => {
     newVal = effectFn();
     handler(newVal, oldVal);
     oldVal = newVal;
   };
   const effectFn = effect(() => getter(), {
-    scheduler,
+    scheduler: () => {
+      // 'post'原本是表示组件更新后执行，而这里只是表示异步执行
+      if (options.flush === 'post') {
+        const p = Promise.resolve();
+        p.then(job);
+      } else {
+        job();
+      }
+    },
     lazy: true,
   });
   if (options.immediate) {
-    scheduler();
+    job();
   } else {
     oldVal = effectFn();
   }
