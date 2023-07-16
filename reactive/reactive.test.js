@@ -270,5 +270,56 @@ describe('响应式', () => {
       obj.text = 'hello vue';
       expect(fn).toHaveBeenCalledTimes(1);
     });
+    test('watch 接收getter函数', () => {
+      const obj = reactive({
+        text: 'hello world',
+        text2: 'text text',
+      });
+      const fn = jest.fn();
+      watch(() => obj.text, fn);
+      expect(fn).toHaveBeenCalledTimes(0);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text2 = 'text text--';
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+    test('watch 回调函数中拿到新值、旧值', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn((newVal, oldVal) => {});
+      watch(() => obj.text, fn);
+      expect(fn).toHaveBeenCalledTimes(0);
+      obj.text = 'hello vue';
+      expect(fn.mock.calls[0][0]).toBe('hello vue');
+      expect(fn.mock.calls[0][1]).toBe('hello world');
+
+      const obj2 = reactive({
+        text: 'hello world',
+      });
+      const fn2 = jest.fn((newVal, oldVal) => {});
+      watch(obj2, fn2);
+      expect(fn2).toHaveBeenCalledTimes(0);
+      obj2.text = 'hello vue';
+      console.log('fn2.mock.calls', fn2.mock.calls);
+      expect(fn2.mock.calls[0][0]).toBe(obj2);
+      expect(fn2.mock.calls[0][1]).toBe(obj2);
+    });
+    test('watch 支持立即执行', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn((newVal, oldVal) => {});
+      watch(() => obj.text, fn, {
+        immediate: true,
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(fn.mock.calls[0][0]).toBe('hello world');
+      expect(fn.mock.calls[0][1]).toBe(undefined);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+      expect(fn.mock.calls[1][0]).toBe('hello vue');
+      expect(fn.mock.calls[1][1]).toBe('hello world');
+    });
   });
 });

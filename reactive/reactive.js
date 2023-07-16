@@ -109,12 +109,28 @@ export function computed(getter) {
 }
 
 // watch
-export function watch(obj, handler) {
-  effect(() => traverse(obj), {
-    scheduler: () => {
-      handler();
-    },
+export function watch(source, handler, options = {}) {
+  let getter;
+  if (typeof source === 'function') {
+    getter = source;
+  } else {
+    getter = () => traverse(source);
+  }
+  let newVal, oldVal;
+  const scheduler = () => {
+    newVal = effectFn();
+    handler(newVal, oldVal);
+    oldVal = newVal;
+  };
+  const effectFn = effect(() => getter(), {
+    scheduler,
+    lazy: true,
   });
+  if (options.immediate) {
+    scheduler();
+  } else {
+    oldVal = effectFn();
+  }
 }
 // 递归遍历
 function traverse(obj, seen = new Set()) {

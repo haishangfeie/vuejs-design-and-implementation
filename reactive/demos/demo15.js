@@ -1,4 +1,4 @@
-import { effect, reactive, watch } from 'reactive';
+import { reactive, watch } from 'reactive';
 console.log('--demo: watch 响应式对象变化时可以触发handler--');
 const obj = reactive({
   text: 'hello world',
