@@ -338,7 +338,8 @@ describe('响应式', () => {
         expect(fn.mock.calls[0][1]).toBe('hello world');
       });
     });
-    test.only('watch 支持让副作用过期', (done) => {
+    test.only('watch 支持让副作用过期', async () => {
+      jest.useFakeTimers();
       const obj = reactive({
         text: 'hello world',
       });
@@ -359,12 +360,13 @@ describe('响应式', () => {
             }, 500);
           });
         });
+      let beforeAwait = [];
       let res = [];
       watch(
         () => obj.text,
         async (newVal, oldVal, onInvalidate) => {
           let expired = false;
-
+          beforeAwait.push(newVal);
           onInvalidate(() => {
             expired = true;
           });
@@ -374,14 +376,15 @@ describe('响应式', () => {
 
       obj.text = 'first';
       obj.text = 'second';
-
-      setTimeout(() => {
-        expect(res).toEqual([
-          ['second', 'second request', false],
-          ['first', 'first request', true],
-        ]);
-        done();
-      }, 1200);
+      jest.runAllTimers();
+      await Promise.resolve(); // 等待异步操作完成
+      // 先触发first,再触发second,但是后触发的方法更早获得返回值，而first获得返回值时已经过期
+      expect(beforeAwait).toEqual(['first', 'second']);
+      expect(res).toEqual([
+        ['second', 'second request', false],
+        ['first', 'first request', true],
+      ]);
+      jest.useRealTimers()
     });
   });
 });
