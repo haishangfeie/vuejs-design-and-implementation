@@ -125,9 +125,16 @@ export function watch(source, handler, options = {}) {
     getter = () => traverse(source);
   }
   let newVal, oldVal;
+  let cleanup;
+  const onInvalidate = (fn) => {
+    cleanup = fn;
+  };
   const job = () => {
     newVal = effectFn();
-    handler(newVal, oldVal);
+    if (cleanup && typeof cleanup === 'function') {
+      cleanup();
+    }
+    handler(newVal, oldVal, onInvalidate);
     oldVal = newVal;
   };
   const effectFn = effect(() => getter(), {
