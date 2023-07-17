@@ -338,5 +338,50 @@ describe('响应式', () => {
         expect(fn.mock.calls[0][1]).toBe('hello world');
       });
     });
+    test.only('watch 支持让副作用过期', (done) => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fetchData = jest.fn();
+
+      fetchData
+        .mockImplementationOnce(() => {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              resolve('first request');
+            }, 1000);
+          });
+        })
+        .mockImplementationOnce(() => {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              resolve('second request');
+            }, 500);
+          });
+        });
+      let res = [];
+      watch(
+        () => obj.text,
+        async (newVal, oldVal, onInvalidate) => {
+          let expired = false;
+
+          onInvalidate(() => {
+            expired = true;
+          });
+          res.push([newVal, await fetchData(), expired]);
+        }
+      );
+
+      obj.text = 'first';
+      obj.text = 'second';
+
+      setTimeout(() => {
+        expect(res).toEqual([
+          ['second', 'second request', false],
+          ['first', 'first request', true],
+        ]);
+        done();
+      }, 1200);
+    });
   });
 });
