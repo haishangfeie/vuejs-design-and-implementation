@@ -338,53 +338,105 @@ describe('响应式', () => {
         expect(fn.mock.calls[0][1]).toBe('hello world');
       });
     });
-    test.only('watch 支持让副作用过期', async () => {
-      jest.useFakeTimers();
-      const obj = reactive({
-        text: 'hello world',
-      });
-      const fetchData = jest.fn();
-
-      fetchData
-        .mockImplementationOnce(() => {
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              resolve('first request');
-            }, 1000);
-          });
-        })
-        .mockImplementationOnce(() => {
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              resolve('second request');
-            }, 500);
-          });
+    // 我感觉一个用例说明不了问题，两个用例加起来才能说明是不管第一个请求快于还是慢于第二个请求，都可以让之前的请求过期，也就是第一个请求的expired标识总是会标识为true
+    describe('watch 支持让副作用过期',()=>{
+      test('watch 支持让副作用过期 - 第一个异步慢于第二个异步', async () => {
+        jest.useFakeTimers();
+        const obj = reactive({
+          text: 'hello world',
         });
-      let beforeAwait = [];
-      let res = [];
-      watch(
-        () => obj.text,
-        async (newVal, oldVal, onInvalidate) => {
-          let expired = false;
-          beforeAwait.push(newVal);
-          onInvalidate(() => {
-            expired = true;
+        const fetchData = jest.fn();
+  
+        fetchData
+          .mockImplementationOnce(() => {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('first request');
+              }, 1000);
+            });
+          })
+          .mockImplementationOnce(() => {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('second request');
+              }, 500);
+            });
           });
-          res.push([newVal, await fetchData(), expired]);
-        }
-      );
+        let beforeAwait = [];
+        let res = [];
+        watch(
+          () => obj.text,
+          async (newVal, oldVal, onInvalidate) => {
+            let expired = false;
+            beforeAwait.push(newVal);
+            onInvalidate(() => {
+              expired = true;
+            });
+            res.push([newVal, await fetchData(), expired]);
+          }
+        );
+  
+        obj.text = 'first';
+        obj.text = 'second';
+        jest.runAllTimers();
+        await Promise.resolve(); // 等待异步操作完成
+        // 先触发first,再触发second,但是后触发的方法更早获得返回值，而first获得返回值时已经过期
+        expect(beforeAwait).toEqual(['first', 'second']);
+        expect(res).toEqual([
+          ['second', 'second request', false],
+          ['first', 'first request', true],
+        ]);
+        jest.useRealTimers();
+      });
+      test('watch 支持让副作用过期 - 第一个异步快于第二个异步', async () => {
+        jest.useFakeTimers();
+        const obj = reactive({
+          text: 'hello world',
+        });
+        const fetchData = jest.fn();
+  
+        fetchData
+          .mockImplementationOnce(() => {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('first request');
+              }, 500);
+            });
+          })
+          .mockImplementationOnce(() => {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                resolve('second request');
+              }, 1000);
+            });
+          });
+        let beforeAwait = [];
+        let res = [];
+        watch(
+          () => obj.text,
+          async (newVal, oldVal, onInvalidate) => {
+            let expired = false;
+            beforeAwait.push(newVal);
+            onInvalidate(() => {
+              expired = true;
+            });
+            res.push([newVal, await fetchData(), expired]);
+          }
+        );
+  
+        obj.text = 'first';
+        obj.text = 'second';
+        jest.runAllTimers();
+        await Promise.resolve(); // 等待异步操作完成
+        // 先触发first,再触发second,但是后触发的方法更早获得返回值，而first获得返回值时已经过期
+        expect(beforeAwait).toEqual(['first', 'second']);
+        expect(res).toEqual([
+          ['first', 'first request', true],
+          ['second', 'second request', false],
+        ]);
+        jest.useRealTimers();
+      });
+    })
 
-      obj.text = 'first';
-      obj.text = 'second';
-      jest.runAllTimers();
-      await Promise.resolve(); // 等待异步操作完成
-      // 先触发first,再触发second,但是后触发的方法更早获得返回值，而first获得返回值时已经过期
-      expect(beforeAwait).toEqual(['first', 'second']);
-      expect(res).toEqual([
-        ['second', 'second request', false],
-        ['first', 'first request', true],
-      ]);
-      jest.useRealTimers()
-    });
   });
 });

@@ -1,10 +1,9 @@
 import { reactive, watch } from 'reactive';
-console.log('--demo: watch 让副作用过期--');
+console.log('--demo: watch 让旧的副作用过期--');
 const obj = reactive({
   text: 'hello world',
 });
 let time = 1000;
-let arr = [1, 2];
 watch(
   () => obj.text,
   async (newVal, oldVal, onInvalidate) => {
@@ -14,17 +13,14 @@ watch(
       expired = true;
     });
     const res = await new Promise((resolve) => {
-      let res = arr.shift();
       setTimeout(() => {
-        console.log(newVal + ' 得到的res');
-        resolve(res);
+        resolve(1);
       }, time);
       time = time / 2;
     });
+    console.log(newVal, '得到结果了');
     if (!expired) {
-      console.log('res', res);
-    } else {
-      console.log('res的结果已经过期');
+      console.log('使用的是', newVal, '触发请求的结果');
     }
   }
 );
@@ -34,3 +30,6 @@ obj.text = '先触发发送的信息';
 setTimeout(() => {
   obj.text = '后发送的信息';
 }, 0);
+console.log(
+  '这里确保了不管值触发的请求，那个更快，使用的都是最后变化触发的那个请求'
+);
