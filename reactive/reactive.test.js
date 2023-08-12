@@ -339,14 +339,14 @@ describe('响应式', () => {
       });
     });
     // 我感觉一个用例说明不了问题，两个用例加起来才能说明是不管第一个请求快于还是慢于第二个请求，都可以让之前的请求过期，也就是第一个请求的expired标识总是会标识为true
-    describe('watch 支持让副作用过期',()=>{
+    describe('watch 支持让副作用过期', () => {
       test('watch 支持让副作用过期 - 第一个异步慢于第二个异步', async () => {
         jest.useFakeTimers();
         const obj = reactive({
           text: 'hello world',
         });
         const fetchData = jest.fn();
-  
+
         fetchData
           .mockImplementationOnce(() => {
             return new Promise((resolve) => {
@@ -375,7 +375,7 @@ describe('响应式', () => {
             res.push([newVal, await fetchData(), expired]);
           }
         );
-  
+
         obj.text = 'first';
         obj.text = 'second';
         jest.runAllTimers();
@@ -394,7 +394,7 @@ describe('响应式', () => {
           text: 'hello world',
         });
         const fetchData = jest.fn();
-  
+
         fetchData
           .mockImplementationOnce(() => {
             return new Promise((resolve) => {
@@ -423,7 +423,7 @@ describe('响应式', () => {
             res.push([newVal, await fetchData(), expired]);
           }
         );
-  
+
         obj.text = 'first';
         obj.text = 'second';
         jest.runAllTimers();
@@ -436,7 +436,24 @@ describe('响应式', () => {
         ]);
         jest.useRealTimers();
       });
-    })
+    });
+  });
+  describe('处理各种读取的情况', () => {
+    test('访问访问器属性时，间接读取的属性修改可以触发响应', () => {
+      const obj = reactive({
+        text: 'hello world',
+        get bar() {
+          return this.text;
+        },
+      });
 
+      const fn = jest.fn(()=>{
+        const a = obj.bar
+      })
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1)
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2)
+    });
   });
 });

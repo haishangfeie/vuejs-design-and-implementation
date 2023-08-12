@@ -71,9 +71,9 @@ function trigger(target, key) {
 
 export const reactive = (data) => {
   return new Proxy(data, {
-    get(target, key) {
+    get(target, key, receiver) {
       track(target, key);
-      return target[key];
+      return Reflect.get(target, key, receiver);
     },
     set(target, key, newVal) {
       target[key] = newVal;
