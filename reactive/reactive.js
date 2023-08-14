@@ -3,6 +3,7 @@
  */
 let activeEffect;
 const stack = [];
+const ITERATE_KEY = Symbol();
 function cleanup(effectFn) {
   const deps = effectFn.deps;
   deps.forEach((effects) => {
@@ -79,6 +80,18 @@ export const reactive = (data) => {
       target[key] = newVal;
       trigger(target, key);
       return true;
+    },
+    // 为了在副作用函数内使用in操作符时可以触发依赖收集
+    // 这里的原理大概是这样的：in的底层会调用HasProperty的抽象方法
+    // 而HasProperty会调用对象内部的[[HasProperty]]，它对应的拦截函数正是has
+    has(target, key) {
+      track(target, key);
+      return Reflect.has(target, key);
+    },
+    // 拦截 for in，进行依赖收集
+    ownKeys(target) {
+      track(target, ITERATE_KEY);
+      return Reflect.ownKeys(target);
     },
   });
 };

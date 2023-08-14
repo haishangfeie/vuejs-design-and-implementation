@@ -455,5 +455,19 @@ describe('响应式', () => {
       obj.text = 'hello vue';
       expect(fn).toHaveBeenCalledTimes(2)
     });
+    test('in操作符可以触发依赖收集', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn()
+      effect(() => {
+        if('text' in obj){
+          fn()
+        }
+      });
+      expect(fn).toHaveBeenCalledTimes(1)
+      obj.text = 'hello vue'
+      expect(fn).toHaveBeenCalledTimes(2)
+    });
   });
 });
