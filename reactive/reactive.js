@@ -1,9 +1,15 @@
 /**
- * 实现计算属性
+ * 实现响应式
  */
+const TriggerType = {
+  ADD: 'ADD',
+  SET: 'SET',
+};
+
 let activeEffect;
 const stack = [];
 const ITERATE_KEY = Symbol();
+
 function cleanup(effectFn) {
   const deps = effectFn.deps;
   deps.forEach((effects) => {
@@ -47,25 +53,35 @@ function track(target, key) {
   activeEffect.deps.push(deps);
 }
 
-function trigger(target, key) {
+function trigger(target, key, type) {
   const targetMap = bucket.get(target);
   if (!targetMap) {
     return;
   }
   const deps = targetMap.get(key);
-  if (!deps) {
-    return;
-  }
+  const depsIterate = targetMap.get(ITERATE_KEY);
+
   // 避免无限循环
-  const effects = new Set(deps);
-  effects.forEach((fn) => {
-    if (fn === activeEffect) {
+  const effects = new Set();
+  if (deps) {
+    deps.forEach((fn) => {
+      effects.add(fn);
+    });
+  }
+
+  if (depsIterate && type === TriggerType.ADD) {
+    depsIterate.forEach((fn) => {
+      effects.add(fn);
+    });
+  }
+  effects.forEach((effect) => {
+    if (effect === activeEffect) {
       return;
     }
-    if (fn.options && fn.options.scheduler) {
-      fn.options.scheduler(fn);
+    if (effect.options && effect.options.scheduler) {
+      effect.options.scheduler(effect);
     } else {
-      fn();
+      effect();
     }
   });
 }
@@ -77,8 +93,11 @@ export const reactive = (data) => {
       return Reflect.get(target, key, receiver);
     },
     set(target, key, newVal) {
+      const type = Object.prototype.hasOwnProperty.call(target, key)
+        ? TriggerType.SET
+        : TriggerType.ADD;
       target[key] = newVal;
-      trigger(target, key);
+      trigger(target, key, type);
       return true;
     },
     // 为了在副作用函数内使用in操作符时可以触发依赖收集
@@ -104,7 +123,7 @@ export function computed(getter) {
     lazy: true,
     scheduler: () => {
       dirty = true;
-      trigger(obj, 'value');
+      trigger(obj, 'value', TriggerType.SET);
     },
   });
   const obj = {
