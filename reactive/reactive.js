@@ -92,13 +92,14 @@ export const reactive = (data) => {
       track(target, key);
       return Reflect.get(target, key, receiver);
     },
-    set(target, key, newVal) {
+    set(target, key, newVal, receiver) {
       const type = Object.prototype.hasOwnProperty.call(target, key)
         ? TriggerType.SET
         : TriggerType.ADD;
-      target[key] = newVal;
+      const res = Reflect.set(target, key, newVal, receiver);
       trigger(target, key, type);
-      return true;
+
+      return res;
     },
     // 为了在副作用函数内使用in操作符时可以触发依赖收集
     // 这里的原理大概是这样的：in的底层会调用HasProperty的抽象方法
