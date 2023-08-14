@@ -447,27 +447,44 @@ describe('响应式', () => {
         },
       });
 
-      const fn = jest.fn(()=>{
-        const a = obj.bar
-      })
+      const fn = jest.fn(() => {
+        const a = obj.bar;
+      });
       effect(fn);
-      expect(fn).toHaveBeenCalledTimes(1)
+      expect(fn).toHaveBeenCalledTimes(1);
       obj.text = 'hello vue';
-      expect(fn).toHaveBeenCalledTimes(2)
+      expect(fn).toHaveBeenCalledTimes(2);
     });
     test('in操作符可以触发依赖收集', () => {
       const obj = reactive({
         text: 'hello world',
       });
-      const fn = jest.fn()
+      const fn = jest.fn();
       effect(() => {
-        if('text' in obj){
-          fn()
+        if ('text' in obj) {
+          fn();
         }
       });
-      expect(fn).toHaveBeenCalledTimes(1)
-      obj.text = 'hello vue'
-      expect(fn).toHaveBeenCalledTimes(2)
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('for in可以触发依赖收集', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn(() => {
+        for (let key in obj) {
+        }
+      });
+      effect(() => {
+        fn();
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text2 = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text = 'hello world2';
+      expect(fn).toHaveBeenCalledTimes(2);
     });
   });
 });
