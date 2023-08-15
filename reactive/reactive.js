@@ -1,9 +1,13 @@
 /**
  * 实现响应式
  */
-const TriggerType = {
+const TriggerTypes = {
+  /** 新增 */
   ADD: 'ADD',
+  /** 设置 */
   SET: 'SET',
+  /** 删除 */
+  DELETE: 'DELETE',
 };
 
 let activeEffect;
@@ -59,6 +63,7 @@ function trigger(target, key, type) {
     return;
   }
   const deps = targetMap.get(key);
+
   const depsIterate = targetMap.get(ITERATE_KEY);
 
   // 避免无限循环
@@ -69,7 +74,10 @@ function trigger(target, key, type) {
     });
   }
 
-  if (depsIterate && type === TriggerType.ADD) {
+  if (
+    depsIterate &&
+    (type === TriggerTypes.ADD || type === TriggerTypes.DELETE)
+  ) {
     depsIterate.forEach((fn) => {
       effects.add(fn);
     });
@@ -94,8 +102,8 @@ export const reactive = (data) => {
     },
     set(target, key, newVal, receiver) {
       const type = Object.prototype.hasOwnProperty.call(target, key)
-        ? TriggerType.SET
-        : TriggerType.ADD;
+        ? TriggerTypes.SET
+        : TriggerTypes.ADD;
       const res = Reflect.set(target, key, newVal, receiver);
       trigger(target, key, type);
 
@@ -113,6 +121,16 @@ export const reactive = (data) => {
       track(target, ITERATE_KEY);
       return Reflect.ownKeys(target);
     },
+    // 拦截属性删除操作
+    deleteProperty(target, key) {
+      const hasKey = Object.prototype.hasOwnProperty.call(target, key);
+      const res = Reflect.deleteProperty(target, key);
+      // 存在key而且删除成功
+      if (hasKey && res) {
+        trigger(target, key, TriggerTypes.DELETE);
+      }
+      return res;
+    },
   });
 };
 
@@ -124,7 +142,7 @@ export function computed(getter) {
     lazy: true,
     scheduler: () => {
       dirty = true;
-      trigger(obj, 'value', TriggerType.SET);
+      trigger(obj, 'value', TriggerTypes.SET);
     },
   });
   const obj = {
