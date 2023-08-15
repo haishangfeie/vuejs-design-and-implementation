@@ -27,6 +27,7 @@ setTimeout(() => {
 }, 100);
 
 /**
+ * 当前demo commit de16cc5dc0f4857933726873b38a1dd20a7860b7
  * 针对 commit 941ad3e7e3ea7d548eda0f60bcec508d83926cef 的reactive.js
  * 1. 为什么100毫秒后，'obj.text2 Hello 哈利'会输出两次？
  * 因为执行时
