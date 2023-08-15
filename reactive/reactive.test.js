@@ -486,5 +486,28 @@ describe('响应式', () => {
       obj.text = 'hello world2';
       expect(fn).toHaveBeenCalledTimes(2);
     });
+    test('设置属性时，间接设置的属性可以触发副作用函数', () => {
+      const obj = reactive({
+        text: 'Tom',
+        get text2() {
+          return `Hello ${this.text}`;
+        },
+        set text2(val) {
+          console.log('触发set');
+          const arr = val.split(' ');
+          this.text = arr[1] || '';
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.text2
+      })
+      effect(fn);
+
+      expect(fn).toHaveBeenCalledTimes(1)
+      obj.text = 'Mary'
+      expect(fn).toHaveBeenCalledTimes(2)
+      obj.text2 = 'hello 哈利'
+      expect(fn).toHaveBeenCalledTimes(4)
+    });
   });
 });
