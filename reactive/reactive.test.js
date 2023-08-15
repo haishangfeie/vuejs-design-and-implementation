@@ -249,7 +249,6 @@ describe('响应式', () => {
         val = c.value;
       });
       effect(fn);
-      console.log('修改obj.b，副作用函数可以被触发');
       expect(fn).toHaveBeenCalledTimes(1);
       expect(val).toBe(4);
       obj.b++;
@@ -301,7 +300,6 @@ describe('响应式', () => {
       watch(obj2, fn2);
       expect(fn2).toHaveBeenCalledTimes(0);
       obj2.text = 'hello vue';
-      console.log('fn2.mock.calls', fn2.mock.calls);
       expect(fn2.mock.calls[0][0]).toBe(obj2);
       expect(fn2.mock.calls[0][1]).toBe(obj2);
     });
@@ -438,7 +436,7 @@ describe('响应式', () => {
       });
     });
   });
-  describe('处理各种读取的情况', () => {
+  describe('处理代理的各种读取的操作', () => {
     test('访问访问器属性时，间接读取的属性修改可以触发响应', () => {
       const obj = reactive({
         text: 'hello world',
@@ -493,21 +491,39 @@ describe('响应式', () => {
           return `Hello ${this.text}`;
         },
         set text2(val) {
-          console.log('触发set');
           const arr = val.split(' ');
           this.text = arr[1] || '';
         },
       });
       const fn = jest.fn(() => {
-        obj.text2
-      })
+        obj.text2;
+      });
       effect(fn);
 
-      expect(fn).toHaveBeenCalledTimes(1)
-      obj.text = 'Mary'
-      expect(fn).toHaveBeenCalledTimes(2)
-      obj.text2 = 'hello 哈利'
-      expect(fn).toHaveBeenCalledTimes(4)
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Mary';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text2 = 'hello 哈利';
+      expect(fn).toHaveBeenCalledTimes(4);
+    });
+    test('删除操作可以触发ITERATE_KEY相关联的副作用函数', () => {
+      const obj = reactive({
+        text: 'Tom',
+        get text2() {
+          return `Hello ${this.text}`;
+        },
+        set text2(val) {
+          const arr = val.split(' ');
+          this.text = arr[1] || '';
+        },
+      });
+      const fn = jest.fn(()=>{
+        for(let key in obj){}
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      delete obj.text2;
+      expect(fn).toHaveBeenCalledTimes(2);
     });
   });
 });
