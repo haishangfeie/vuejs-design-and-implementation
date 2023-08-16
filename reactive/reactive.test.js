@@ -526,4 +526,26 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
   });
+  describe('合理地触发响应',()=>{
+    test('值没有变化时不会触发响应',()=>{
+      const obj = reactive({
+        text: 'Tom',
+      });
+      const fn = jest.fn(() => {
+        obj.text
+      })
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1)
+      obj.text = 'Tom'
+      expect(fn).toHaveBeenCalledTimes(1)
+      obj.text = 'Tom2'
+      expect(fn).toHaveBeenCalledTimes(2)
+      obj.text = NaN
+      expect(fn).toHaveBeenCalledTimes(3)
+      obj.text = NaN
+      expect(fn).toHaveBeenCalledTimes(3)
+      obj.text = 1
+      expect(fn).toHaveBeenCalledTimes(4)
+    })
+  })
 });
