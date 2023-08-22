@@ -1,4 +1,4 @@
-import { effect, reactive, computed, watch } from './reactive';
+import { effect, reactive, computed, watch, shallowReactive } from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
   describe('effect', () => {
@@ -580,6 +580,20 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(1);
       obj.foo.bar = 2;
       expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('shallowReactive不会触发深响应', () => {
+      const obj = shallowReactive({
+        foo: {
+          bar: 1,
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.foo.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.foo.bar = 2;
+      expect(fn).toHaveBeenCalledTimes(1);
     });
   });
 });
