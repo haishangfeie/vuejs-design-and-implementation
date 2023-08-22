@@ -517,8 +517,9 @@ describe('响应式', () => {
           this.text = arr[1] || '';
         },
       });
-      const fn = jest.fn(()=>{
-        for(let key in obj){}
+      const fn = jest.fn(() => {
+        for (let key in obj) {
+        }
       });
       effect(fn);
       expect(fn).toHaveBeenCalledTimes(1);
@@ -526,26 +527,43 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
   });
-  describe('合理地触发响应',()=>{
-    test('值没有变化时不会触发响应',()=>{
+  describe('合理地触发响应', () => {
+    test('值没有变化时不会触发响应', () => {
       const obj = reactive({
         text: 'Tom',
       });
       const fn = jest.fn(() => {
-        obj.text
-      })
+        obj.text;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Tom';
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Tom2';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text = NaN;
+      expect(fn).toHaveBeenCalledTimes(3);
+      obj.text = NaN;
+      expect(fn).toHaveBeenCalledTimes(3);
+      obj.text = 1;
+      expect(fn).toHaveBeenCalledTimes(4);
+    });
+    test('避免实例原型的代理对象的set拦截函数被执行', () => {
+      const obj = {};
+      const proto = { bar: 1 };
+      const child = reactive(obj);
+      const parent = reactive(proto);
+
+      // 使用parent作为child的原型
+      Object.setPrototypeOf(child, parent);
+
+      const fn = jest.fn(() => {
+        child.bar;
+      });
       effect(fn);
       expect(fn).toHaveBeenCalledTimes(1)
-      obj.text = 'Tom'
-      expect(fn).toHaveBeenCalledTimes(1)
-      obj.text = 'Tom2'
+      child.bar = 2;
       expect(fn).toHaveBeenCalledTimes(2)
-      obj.text = NaN
-      expect(fn).toHaveBeenCalledTimes(3)
-      obj.text = NaN
-      expect(fn).toHaveBeenCalledTimes(3)
-      obj.text = 1
-      expect(fn).toHaveBeenCalledTimes(4)
-    })
-  })
+    });
+  });
 });

@@ -97,6 +97,10 @@ function trigger(target, key, type) {
 export const reactive = (data) => {
   return new Proxy(data, {
     get(target, key, receiver) {
+      // 为了让代理对象可以访问到原始数据
+      if (key === 'raw') {
+        return target;
+      }
       track(target, key);
       return Reflect.get(target, key, receiver);
     },
@@ -104,13 +108,16 @@ export const reactive = (data) => {
       const type = Object.prototype.hasOwnProperty.call(target, key)
         ? TriggerTypes.SET
         : TriggerTypes.ADD;
-      const oldVal = target[key]
+      const oldVal = target[key];
       const res = Reflect.set(target, key, newVal, receiver);
-      
-      // 只有值发生变化，触发触发响应
-      // 新值与旧值不全等，并且不都是NaN时才触发响应
-      if(newVal !== oldVal && (oldVal === oldVal || newVal === newVal)) {
-        trigger(target, key, type);
+
+      // 确保receiver是target的代理对象
+      if (target === receiver.raw) {
+        // 只有值发生变化，触发触发响应
+        // 新值与旧值不全等，并且不都是NaN时才触发响应
+        if (newVal !== oldVal && (oldVal === oldVal || newVal === newVal)) {
+          trigger(target, key, type);
+        }
       }
 
       return res;

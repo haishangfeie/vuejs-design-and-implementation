@@ -1,7 +1,6 @@
 import { reactive, effect } from 'reactive';
 
 console.log('--demo: 值没有发生变化不会触发响应-');
-// 我感觉这个更像是遗留的问题，而不是功能，所以这个没有用例
 const obj = reactive({
   text: 'Tom',
 });
