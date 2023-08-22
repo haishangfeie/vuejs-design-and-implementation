@@ -561,9 +561,25 @@ describe('响应式', () => {
         child.bar;
       });
       effect(fn);
-      expect(fn).toHaveBeenCalledTimes(1)
+      expect(fn).toHaveBeenCalledTimes(1);
       child.bar = 2;
-      expect(fn).toHaveBeenCalledTimes(2)
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+  });
+  describe('深响应&浅响应', () => {
+    test('reactive可以触发深响应', () => {
+      const obj = reactive({
+        foo: {
+          bar: 1,
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.foo.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.foo.bar = 2;
+      expect(fn).toHaveBeenCalledTimes(2);
     });
   });
 });

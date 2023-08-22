@@ -102,7 +102,12 @@ export const reactive = (data) => {
         return target;
       }
       track(target, key);
-      return Reflect.get(target, key, receiver);
+      const res = Reflect.get(target, key, receiver);
+
+      if (typeof res === 'object' && res !== null) {
+        return reactive(res);
+      }
+      return res;
     },
     set(target, key, newVal, receiver) {
       const type = Object.prototype.hasOwnProperty.call(target, key)
