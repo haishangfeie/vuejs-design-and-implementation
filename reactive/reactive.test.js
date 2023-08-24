@@ -1,4 +1,11 @@
-import { effect, reactive, computed, watch, shallowReactive } from './reactive';
+import {
+  effect,
+  reactive,
+  computed,
+  watch,
+  shallowReactive,
+  readonly,
+} from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
   describe('effect', () => {
@@ -594,6 +601,20 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(1);
       obj.foo.bar = 2;
       expect(fn).toHaveBeenCalledTimes(1);
+    });
+    test('只读对象修改时不会生效', () => {
+      const obj = readonly({
+        foo: {
+          bar: 1,
+        },
+      });
+      const old = obj.foo;
+      obj.foo = 1;
+      expect(obj.foo).toStrictEqual(old);
+      obj.foo.bar = 2;
+      obj.foo.name = 'name';
+      expect(obj.foo.bar).toBe(1);
+      expect(obj.foo.name).toBe(undefined);
     });
   });
 });

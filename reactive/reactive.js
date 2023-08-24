@@ -102,6 +102,10 @@ export const shallowReactive = (obj) => {
   return createReactive(obj, true);
 };
 
+export const readonly = (obj) => {
+  return createReactive(obj, false, true);
+};
+
 // 计算属性
 export function computed(getter) {
   let _value;
@@ -202,22 +206,28 @@ function isObject(obj) {
   return obj !== null && typeof obj === 'object';
 }
 
-function createReactive(data, isShallow = false) {
+function createReactive(data, isShallow = false, isReadonly = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
       // 为了让代理对象可以访问到原始数据
       if (key === 'raw') {
         return target;
       }
-      track(target, key);
+      if (!isReadonly) {
+        track(target, key);
+      }
       const res = Reflect.get(target, key, receiver);
 
       if (typeof res === 'object' && res !== null && !isShallow) {
-        return reactive(res);
+        return isReadonly ? readonly(res) : reactive(res);
       }
       return res;
     },
     set(target, key, newVal, receiver) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读的`);
+        return true;
+      }
       const type = Object.prototype.hasOwnProperty.call(target, key)
         ? TriggerTypes.SET
         : TriggerTypes.ADD;
@@ -249,6 +259,10 @@ function createReactive(data, isShallow = false) {
     },
     // 拦截属性删除操作
     deleteProperty(target, key) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读的`);
+        return true;
+      }
       const hasKey = Object.prototype.hasOwnProperty.call(target, key);
       const res = Reflect.deleteProperty(target, key);
       // 存在key而且删除成功
