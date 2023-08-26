@@ -5,6 +5,7 @@ import {
   watch,
   shallowReactive,
   readonly,
+  shallowReadonly
 } from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
@@ -615,6 +616,21 @@ describe('响应式', () => {
       obj.foo.name = 'name';
       expect(obj.foo.bar).toBe(1);
       expect(obj.foo.name).toBe(undefined);
+    });
+    test('浅只读对象修改修改浅层时不能修改，但是可以修改深层的数据', () => {
+      const obj = shallowReadonly({
+        foo: {
+          bar: 1,
+        },
+      });
+
+      const old = obj.foo;
+      obj.foo = 1;
+      expect(obj.foo).toStrictEqual(old);
+      obj.foo.bar = 2;
+      obj.foo.name = 'name';
+      expect(obj.foo.bar).toBe(2);
+      expect(obj.foo.name).toBe('name');
     });
   });
 });

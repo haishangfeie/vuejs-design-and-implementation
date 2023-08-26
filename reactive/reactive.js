@@ -94,17 +94,10 @@ function trigger(target, key, type) {
   });
 }
 
-export const reactive = (obj) => {
-  return createReactive(obj, false);
-};
-
-export const shallowReactive = (obj) => {
-  return createReactive(obj, true);
-};
-
-export const readonly = (obj) => {
-  return createReactive(obj, false, true);
-};
+export const reactive = (obj) => createReactive(obj, false);
+export const shallowReactive = (obj) => createReactive(obj, true);
+export const readonly = (obj) => createReactive(obj, false, true);
+export const shallowReadonly = (obj) => createReactive(obj, true, true);
 
 // 计算属性
 export function computed(getter) {
