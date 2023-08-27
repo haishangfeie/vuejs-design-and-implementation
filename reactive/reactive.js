@@ -57,14 +57,12 @@ function track(target, key) {
   activeEffect.deps.push(deps);
 }
 
-function trigger(target, key, type) {
+function trigger(target, key, type, newVal) {
   const targetMap = bucket.get(target);
   if (!targetMap) {
     return;
   }
   const deps = targetMap.get(key);
-
-  const depsIterate = targetMap.get(ITERATE_KEY);
 
   // 避免无限循环
   const effects = new Set();
@@ -74,14 +72,33 @@ function trigger(target, key, type) {
     });
   }
 
+  if (Array.isArray(target) && type === TriggerTypes.ADD) {
+    const lenDeps = targetMap.get('length');
+    lenDeps &&
+      lenDeps.forEach((fn) => {
+        effects.add(fn);
+      });
+  }
+  if (Array.isArray(target) && key === 'length') {
+    targetMap.forEach((deps, key) => {
+      if (key >= newVal) {
+        deps.forEach((fn) => {
+          effects.add(fn);
+        });
+      }
+    });
+  }
+
+  const iterateDeps = targetMap.get(ITERATE_KEY);
   if (
-    depsIterate &&
+    iterateDeps &&
     (type === TriggerTypes.ADD || type === TriggerTypes.DELETE)
   ) {
-    depsIterate.forEach((fn) => {
+    iterateDeps.forEach((fn) => {
       effects.add(fn);
     });
   }
+
   effects.forEach((effect) => {
     if (effect === activeEffect) {
       return;
@@ -221,9 +238,14 @@ function createReactive(data, isShallow = false, isReadonly = false) {
         console.warn(`属性${key}是只读的`);
         return true;
       }
-      const type = Object.prototype.hasOwnProperty.call(target, key)
+      const type = Array.isArray(target)
+        ? Number(key) < target.length
+          ? TriggerTypes.SET
+          : TriggerTypes.ADD
+        : Object.prototype.hasOwnProperty.call(target, key)
         ? TriggerTypes.SET
         : TriggerTypes.ADD;
+
       const oldVal = target[key];
       const res = Reflect.set(target, key, newVal, receiver);
 
@@ -232,7 +254,7 @@ function createReactive(data, isShallow = false, isReadonly = false) {
         // 只有值发生变化，触发触发响应
         // 新值与旧值不全等，并且不都是NaN时才触发响应
         if (newVal !== oldVal && (oldVal === oldVal || newVal === newVal)) {
-          trigger(target, key, type);
+          trigger(target, key, type, newVal);
         }
       }
 
