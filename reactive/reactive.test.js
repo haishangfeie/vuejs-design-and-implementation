@@ -5,7 +5,7 @@ import {
   watch,
   shallowReactive,
   readonly,
-  shallowReadonly
+  shallowReadonly,
 } from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
@@ -631,6 +631,14 @@ describe('响应式', () => {
       obj.foo.name = 'name';
       expect(obj.foo.bar).toBe(2);
       expect(obj.foo.name).toBe('name');
+    });
+  });
+  describe('代理数组', () => {
+    test('设置数组索引值导致arr.length变化时，会触发与arr.length相关联的响应式', () => {
+      // TODO
+    });
+    test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
+      // TODO
     });
   });
 });
