@@ -635,10 +635,54 @@ describe('响应式', () => {
   });
   describe('代理数组', () => {
     test('设置数组索引值导致arr.length变化时，会触发与arr.length相关联的响应式', () => {
-      // TODO
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        arr.length;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      // 设置索引1的值，会导致数组长度变化
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
     });
     test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
-      // TODO
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        console.log('arr[0]', arr[0]);
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      // 设置索引1的值，会导致数组长度变化
+      arr.length = 0;
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('数组 for in遍历数组，发生影响遍历结果的操作时副作用函数要重新执行', () => {
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        for (const key in arr) {
+          key;
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[2] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系', () => {
+      const arr = reactive([1, 2, 3, 4, 5]);
+      const fn = jest.fn(() => {
+        for (const val of arr) {
+          val
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
     });
   });
 });

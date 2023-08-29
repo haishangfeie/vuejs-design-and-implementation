@@ -223,7 +223,8 @@ function createReactive(data, isShallow = false, isReadonly = false) {
       if (key === 'raw') {
         return target;
       }
-      if (!isReadonly) {
+      // typeof key !== 'symbol' 这句的判断是因为使用for...of循环，或者for...of arr.values()都会读取数组的Symbol.iterator属性。为了避免发生意外的错误，以及性能方面的考量，不需要让副作用函数与这类symbol值间建立响应式联系
+      if (!isReadonly && typeof key !== 'symbol') {
         track(target, key);
       }
       const res = Reflect.get(target, key, receiver);
@@ -269,7 +270,7 @@ function createReactive(data, isShallow = false, isReadonly = false) {
     },
     // 拦截 for in，进行依赖收集
     ownKeys(target) {
-      track(target, ITERATE_KEY);
+      track(target, Array.isArray(target) ? 'length' : ITERATE_KEY);
       return Reflect.ownKeys(target);
     },
     // 拦截属性删除操作
