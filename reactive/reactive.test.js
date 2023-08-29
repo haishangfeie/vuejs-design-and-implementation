@@ -670,10 +670,24 @@ describe('响应式', () => {
       arr.length = 10;
       expect(fn).toHaveBeenCalledTimes(3);
     });
-    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系', () => {
+    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-1', () => {
       const arr = reactive([1, 2, 3, 4, 5]);
       const fn = jest.fn(() => {
         for (const val of arr) {
+          val
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-2', () => {
+      const arr = reactive([1, 2, 3, 4, 5]);
+      const fn = jest.fn(() => {
+        for (const val of arr.values()) {
           val
         }
       });
