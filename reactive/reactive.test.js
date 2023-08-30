@@ -674,7 +674,7 @@ describe('响应式', () => {
       const arr = reactive([1, 2, 3, 4, 5]);
       const fn = jest.fn(() => {
         for (const val of arr) {
-          val
+          val;
         }
       });
       effect(fn);
@@ -688,7 +688,7 @@ describe('响应式', () => {
       const arr = reactive([1, 2, 3, 4, 5]);
       const fn = jest.fn(() => {
         for (const val of arr.values()) {
-          val
+          val;
         }
       });
       effect(fn);
@@ -697,6 +697,30 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(2);
       arr.length = 10;
       expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('访问代理数组没有被修改元素时，每次访问到同一个代理对象', () => {
+      const obj = {};
+      const arr = reactive([obj]);
+      expect(arr[0] === arr[0]).toBe(true);
+      expect(arr.includes(arr[0])).toBe(true);
+    });
+    test('数组使用includes/indexOf/lastIndexOf方法寻找代理数组元素对应的原始对象时，应该要返回true/对应索引', () => {
+      const obj = {};
+      const obj2 = {};
+      const arr1 = reactive([obj, obj2, obj2]);
+      const arr2 = reactive([obj, obj, obj2]);
+      expect(arr1.includes(obj)).toBe(true);
+      expect(arr1.includes(obj, 1)).toBe(false);
+      expect(arr2.includes(obj, 1)).toBe(true);
+
+      expect(arr1.indexOf(obj)).toBe(0);
+      expect(arr1.indexOf(obj, 1)).toBe(-1);
+      expect(arr1.indexOf(obj2, 1)).toBe(1);
+      expect(arr1.indexOf(obj2, 2)).toBe(2);
+
+      expect(arr1.lastIndexOf(obj2)).toBe(2);
+      expect(arr1.lastIndexOf(obj2, 1)).toBe(1);
+      expect(arr1.lastIndexOf(obj2, 0)).toBe(-1);
     });
   });
 });

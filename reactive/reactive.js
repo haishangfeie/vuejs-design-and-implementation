@@ -1,6 +1,8 @@
 /**
  * 实现响应式
  */
+import arrayInstrumentations from './arrayInstrumentations.js';
+
 const TriggerTypes = {
   /** 新增 */
   ADD: 'ADD',
@@ -216,6 +218,7 @@ function isObject(obj) {
   return obj !== null && typeof obj === 'object';
 }
 
+const reactiveMap = new Map();
 function createReactive(data, isShallow = false, isReadonly = false) {
   return new Proxy(data, {
     get(target, key, receiver) {
@@ -227,10 +230,20 @@ function createReactive(data, isShallow = false, isReadonly = false) {
       if (!isReadonly && typeof key !== 'symbol') {
         track(target, key);
       }
+
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver);
+      }
       const res = Reflect.get(target, key, receiver);
 
       if (typeof res === 'object' && res !== null && !isShallow) {
-        return isReadonly ? readonly(res) : reactive(res);
+        const existProxy = reactiveMap.get(res);
+        if (existProxy) {
+          return existProxy;
+        }
+        const proxyRes = isReadonly ? readonly(res) : reactive(res);
+        reactiveMap.set(res, proxyRes);
+        return proxyRes;
       }
       return res;
     },
