@@ -2,7 +2,7 @@
  * 实现响应式
  */
 import arrayInstrumentations from './arrayInstrumentations.js';
-
+import { getShouldTrack } from './shouldTrack.js';
 const TriggerTypes = {
   /** 新增 */
   ADD: 'ADD',
@@ -44,8 +44,8 @@ export function effect(fn, options = {}) {
 const bucket = new WeakMap();
 
 function track(target, key) {
-  if (!activeEffect) {
-    return target[key];
+  if (!activeEffect || !getShouldTrack()) {
+    return;
   }
   if (!bucket.has(target)) {
     bucket.set(target, new Map());

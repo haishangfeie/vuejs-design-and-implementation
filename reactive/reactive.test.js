@@ -722,5 +722,19 @@ describe('响应式', () => {
       expect(arr1.lastIndexOf(obj2, 1)).toBe(1);
       expect(arr1.lastIndexOf(obj2, 0)).toBe(-1);
     });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系', () => {
+      const arr = reactive([]);
+      const fn1 = jest.fn(() => {
+        arr.push(1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.push(1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
   });
 });
