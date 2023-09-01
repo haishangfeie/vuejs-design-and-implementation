@@ -262,7 +262,7 @@ function createReactive(data, isShallow = false, isReadonly = false) {
           return Reflect.get(target, key, target);
         }
 
-        return mutableInstrumentations[key];
+        return mutableInstrumentations[key] || target[key].bind(target);
       }
       const res = Reflect.get(target, key, receiver);
 
