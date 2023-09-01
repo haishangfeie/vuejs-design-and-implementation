@@ -16,6 +16,27 @@ let activeEffect;
 const stack = [];
 const ITERATE_KEY = Symbol();
 
+const mutableInstrumentations = {
+  add(val) {
+    const target = this.raw;
+    const hasKey = target.has(val);
+    const res = target.add(val);
+    if (!hasKey) {
+      trigger(target, ITERATE_KEY, TriggerTypes.ADD);
+    }
+    return res;
+  },
+  delete(val) {
+    const target = this.raw;
+    const hasKey = target.has(val);
+    const res = target.delete(val);
+    if (hasKey) {
+      trigger(target, ITERATE_KEY, TriggerTypes.DELETE);
+    }
+    return res;
+  },
+};
+
 function cleanup(effectFn) {
   const deps = effectFn.deps;
   deps.forEach((effects) => {
@@ -233,6 +254,15 @@ function createReactive(data, isShallow = false, isReadonly = false) {
 
       if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
         return Reflect.get(arrayInstrumentations, key, receiver);
+      }
+
+      if (target instanceof Set) {
+        if (key === 'size') {
+          track(target, ITERATE_KEY);
+          return Reflect.get(target, key, target);
+        }
+
+        return mutableInstrumentations[key];
       }
       const res = Reflect.get(target, key, receiver);
 

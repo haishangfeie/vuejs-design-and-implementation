@@ -722,7 +722,8 @@ describe('响应式', () => {
       expect(arr1.lastIndexOf(obj2, 1)).toBe(1);
       expect(arr1.lastIndexOf(obj2, 0)).toBe(-1);
     });
-    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系', () => {
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-1', () => {
+      // 类似的，还应该有pop/unshift/shift/splice等方法的用例
       const arr = reactive([]);
       const fn1 = jest.fn(() => {
         arr.push(1);
@@ -735,6 +736,93 @@ describe('响应式', () => {
       effect(fn2);
       expect(fn1).toHaveBeenCalledTimes(1);
       expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-2', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.pop();
+      });
+      const fn2 = jest.fn(() => {
+        arr.pop();
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-3', () => {
+      const arr = reactive([]);
+      const fn1 = jest.fn(() => {
+        arr.unshift(1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.unshift(1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-4', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.shift();
+      });
+      const fn2 = jest.fn(() => {
+        arr.shift();
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-5', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.splice(1, 1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.splice(1, 1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+  });
+  describe('代理Set', () => {
+    test('能从Set的响应式对象中读取到size的值', () => {
+      const s = new Set([1, 2, 3]);
+      const p = reactive(s);
+      expect(p.size).toBe(3);
+    });
+    test('能从Set的响应式对象删除元素', () => {
+      const s = new Set([1, 2, 3]);
+      const p = reactive(s);
+      p.delete(1);
+      expect(p.size).toBe(2);
+      expect(p.has(1)).toBe(false);
+    });
+    test('新增、删除操作可以触发副作用函数内访问了size属性的响应', () => {
+      const s = reactive(new Set([1, 2, 3]));
+
+      const fn = jest.fn(() => {
+        s.size
+      })
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1)
+      s.add(4);
+      expect(fn).toHaveBeenCalledTimes(2)
+      s.add(1);
+      expect(fn).toHaveBeenCalledTimes(2)
+      s.delete(1)
+      expect(fn).toHaveBeenCalledTimes(3)
+      s.delete(100)
+      expect(fn).toHaveBeenCalledTimes(3)
     });
   });
 });
