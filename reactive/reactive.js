@@ -1,8 +1,6 @@
 /**
  * 实现响应式
  */
-import arrayInstrumentations from './arrayInstrumentations.js';
-import { getShouldTrack } from './shouldTrack.js';
 const TriggerTypes = {
   /** 新增 */
   ADD: 'ADD',
@@ -13,6 +11,32 @@ const TriggerTypes = {
 };
 
 let activeEffect;
+let shouldTrack = true;
+
+const arrayInstrumentations = {};
+['includes', 'indexOf', 'lastIndexOf'].forEach((method) => {
+  const originMethod = Array.prototype[method];
+
+  arrayInstrumentations[method] = function (...args) {
+    const res = originMethod.apply(this, args);
+    if (res === false || res === -1) {
+      return originMethod.apply(this.raw, args);
+    }
+    return res;
+  };
+});
+
+['push', 'pop', 'shift', 'unshift', 'splice'].forEach((method) => {
+  const originMethod = Array.prototype[method];
+  arrayInstrumentations[method] = function (...args) {
+    shouldTrack = false;
+    const res = originMethod.apply(this, args);
+    shouldTrack = true;
+
+    return res;
+  };
+});
+
 const stack = [];
 const ITERATE_KEY = Symbol();
 
@@ -65,7 +89,7 @@ export function effect(fn, options = {}) {
 const bucket = new WeakMap();
 
 function track(target, key) {
-  if (!activeEffect || !getShouldTrack()) {
+  if (!activeEffect || !shouldTrack) {
     return;
   }
   if (!bucket.has(target)) {

@@ -648,7 +648,7 @@ describe('响应式', () => {
     test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
       const arr = reactive(['foo']);
       const fn = jest.fn(() => {
-        console.log('arr[0]', arr[0]);
+        arr[0]
       });
       effect(fn);
       expect(fn).toHaveBeenCalledTimes(1);
