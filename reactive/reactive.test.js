@@ -648,7 +648,7 @@ describe('响应式', () => {
     test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
       const arr = reactive(['foo']);
       const fn = jest.fn(() => {
-        arr[0]
+        arr[0];
       });
       effect(fn);
       expect(fn).toHaveBeenCalledTimes(1);
@@ -697,6 +697,12 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(2);
       arr.length = 10;
       expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('reactive创建代理对象时，如果原始对象已经存在代理对象，会返回原有的代理对象', () => {
+      const arr = [{}];
+      const proxy1 = reactive(arr);
+      const proxy2 = reactive(arr);
+      expect(proxy1).toBe(proxy2);
     });
     test('访问代理数组没有被修改元素时，每次访问到同一个代理对象', () => {
       const obj = {};
@@ -811,18 +817,18 @@ describe('响应式', () => {
       const s = reactive(new Set([1, 2, 3]));
 
       const fn = jest.fn(() => {
-        s.size
-      })
+        s.size;
+      });
       effect(fn);
-      expect(fn).toHaveBeenCalledTimes(1)
+      expect(fn).toHaveBeenCalledTimes(1);
       s.add(4);
-      expect(fn).toHaveBeenCalledTimes(2)
+      expect(fn).toHaveBeenCalledTimes(2);
       s.add(1);
-      expect(fn).toHaveBeenCalledTimes(2)
-      s.delete(1)
-      expect(fn).toHaveBeenCalledTimes(3)
-      s.delete(100)
-      expect(fn).toHaveBeenCalledTimes(3)
+      expect(fn).toHaveBeenCalledTimes(2);
+      s.delete(1);
+      expect(fn).toHaveBeenCalledTimes(3);
+      s.delete(100);
+      expect(fn).toHaveBeenCalledTimes(3);
     });
   });
 });
