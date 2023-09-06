@@ -158,7 +158,15 @@ function trigger(target, key, type, newVal) {
   });
 }
 
-export const reactive = (obj) => createReactive(obj, false);
+export const reactive = (obj) => {
+  const existProxy = reactiveMap.get(obj);
+  if (existProxy) {
+    return existProxy;
+  }
+  const proxy = createReactive(obj, false);
+  reactiveMap.set(obj, proxy);
+  return proxy;
+};
 export const shallowReactive = (obj) => createReactive(obj, true);
 export const readonly = (obj) => createReactive(obj, false, true);
 export const shallowReadonly = (obj) => createReactive(obj, true, true);
@@ -271,13 +279,12 @@ function createReactive(data, isShallow = false, isReadonly = false) {
       if (key === 'raw') {
         return target;
       }
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver);
+      }
       // typeof key !== 'symbol' 这句的判断是因为使用for...of循环，或者for...of arr.values()都会读取数组的Symbol.iterator属性。为了避免发生意外的错误，以及性能方面的考量，不需要让副作用函数与这类symbol值间建立响应式联系
       if (!isReadonly && typeof key !== 'symbol') {
         track(target, key);
-      }
-
-      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
-        return Reflect.get(arrayInstrumentations, key, receiver);
       }
 
       if (target instanceof Set) {
@@ -291,13 +298,7 @@ function createReactive(data, isShallow = false, isReadonly = false) {
       const res = Reflect.get(target, key, receiver);
 
       if (typeof res === 'object' && res !== null && !isShallow) {
-        const existProxy = reactiveMap.get(res);
-        if (existProxy) {
-          return existProxy;
-        }
-        const proxyRes = isReadonly ? readonly(res) : reactive(res);
-        reactiveMap.set(res, proxyRes);
-        return proxyRes;
+        return isReadonly ? readonly(res) : reactive(res);
       }
       return res;
     },
