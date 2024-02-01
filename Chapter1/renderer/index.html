@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    // const node = {
+    //   tag: 'div',
+    //   children: [
+    //     {
+    //       tag: 'div',
+    //       children: 'Hello World'
+    //     },
+    //     {
+    //       tag: 'div',
+    //       children: [
+    //         {
+    //           tag: 'span',
+    //           children: 'I am span'
+    //         },
+    //         {
+    //           tag: 'div',
+    //           children: 'I am div'
+    //         }
+    //       ]
+    //     }
+
+    //   ]
+    // }
+    const node = {
+      tag: 'div',
+      children: [
+        {
+          tag: 'div',
+          children: 'Hello World'
+        },
+        {
+          tag: 'div',
+          children: [
+            'a',
+            'b',
+            'c',
+            {
+              tag: 'span',
+              children: 'hahaha'
+            }
+          ]
+        }
+
+      ]
+    }
+    const Render = (node, root) => {
+      if (typeof node === 'string') {
+        root.appendChild(document.createTextNode(node))
+        return
+      }
+      const el = document.createElement(node.tag)
+      if (typeof node.children === 'string') {
+        /* 
+          为什么这里不使用`el.textContent = node.children`?
+          这是因为document.createTextNode和textContent在处理文本节点时有一些不同。
+          textContent属性表示元素的文本内容。当你设置这个属性时，它会删除所有的子节点并被替换为一个包含给定字符串的单个文本节点。
+
+          而document.createTextNode方法创建一个新的文本节点，这意味着你可以创建多个独立的文本节点。这在你需要插入多个文本节点到同一个元素中时非常有用。
+
+          在你给出的代码中，使用document.createTextNode和appendChild可以确保如果node.children是一个字符串数组，每个字符串都会被创建为一个独立的文本节点并被添加到元素中。如果使用textContent，则只会创建一个文本节点，所有的字符串都会被合并到这个节点中。
+
+          总的来说，这两者在大多数情况下可以互换使用，但是在某些特定的情况下，document.createTextNode提供了更多的灵活性。希望这个解释对你有所帮助！
+        */
+        // el.textContent = node.children
+        const text = document.createTextNode(node.children)
+        el.appendChild(text)
+      } else if (Array.isArray(node.children)) {
+        node.children.forEach(item => {
+          Render(item, el)
+        })
+      }
+      root.appendChild(el)
+    }
+    Render(node, document.body)
+  </script>
+</body>
+</html>
