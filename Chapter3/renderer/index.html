@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    function renderer(vnode, container) {
+      const el = document.createElement(vnode.tag)
+
+      Object.keys(vnode.props).forEach(prop => {
+        if (/on(\S)*/.test(prop)) {
+          const event = prop.slice(2).toLowerCase()
+          el.addEventListener(event, function (e) {
+            vnode.props[prop].call(this, e)
+          })
+        }
+      })
+
+      if (typeof vnode.children === 'string') {
+        const textNode = document.createTextNode(vnode.children)
+        el.appendChild(textNode)
+      } else if (Array.isArray(el.children)) {
+        el.children.forEach(item => {
+          renderer(item, el)
+        })
+      }
+      container.appendChild(el)
+    }
+    const vnode = {
+      tag: 'div',
+      props: {
+        onClick: () => {
+          alert('hello')
+        }
+      },
+      children: 'click me'
+    }
+    renderer(vnode, document.querySelector('#app'))
+  </script>
+</body>
+</html>
