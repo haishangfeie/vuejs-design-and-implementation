@@ -6,9 +6,15 @@
   <title>Document</title>
 </head>
 <body>
-  <div id="app"></div>
   <script>
     function renderer(vnode, container) {
+      if (typeof vnode.tag === 'string') {
+        mountElement(vnode, container)
+      } else if (typeof vnode.tag === 'function') {
+        mountComponent(vnode, container)
+      }
+    }
+    function mountElement(vnode, container) {
       const el = document.createElement(vnode.tag)
 
       Object.keys(vnode.props).forEach(prop => {
@@ -30,16 +36,12 @@
       }
       container.appendChild(el)
     }
-    const vnode = {
-      tag: 'div',
-      props: {
-        onClick: () => {
-          alert('hello')
-        }
-      },
-      children: 'click me'
+
+    function mountComponent(vnode, container) {
+      const subtree = vnode.tag()
+
+      renderer(subtree, container)
     }
-    renderer(vnode, document.querySelector('#app'))
   </script>
 </body>
 </html>
