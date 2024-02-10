@@ -11,7 +11,7 @@ effect(() => {
 });
 
 setTimeout(() => {
-  // proxy.text = 'hello Vue';
-  proxy.text2 = 'hello Vue';
+  proxy.text = 'hello Vue';
+  // proxy.text2 = 'hello Vue';
   console.log('setTimeout');
 }, 1000);
