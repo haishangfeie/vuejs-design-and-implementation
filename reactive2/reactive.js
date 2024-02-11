@@ -1,12 +1,32 @@
 // 这个是重看书本时重新实现
 // 用全局函数存副作用函数，从而避免硬编码副作用函数
 
+/**
+  存在的问题：依赖项失效后，修改依赖项仍然会触发副作用函数
+  解决方案，每次执行副作用函数的时候，将与之关联的依赖集合删除，然后执行副作用函数的时候又会重新建立联系，这时失效的依赖项就和副作用函数没有联系了
+
+  -》执行副作用函数的时，要找到与之关联的依赖集合
+ */
 let activeEffect;
 
+const cleanup = (effectFn) => {
+  if (effectFn.depsList) {
+    effectFn.depsList.forEach((deps) => {
+      if (deps.has(effectFn)) {
+        deps.delete(effectFn);
+      }
+    });
+    effectFn.depsList.clear();
+  }
+};
 // 用来注册副作用函数
 export const effect = (fn) => {
-  activeEffect = fn;
-  fn();
+  const effectFn = () => {
+    cleanup(effectFn);
+    activeEffect = effectFn;
+    fn();
+  };
+  effectFn();
 };
 
 const bucket = new WeakMap();
@@ -22,6 +42,10 @@ function track(target, key, receiver) {
     }
     const deps = depsMap.get(key);
     deps.add(activeEffect);
+    if (!activeEffect.depsList) {
+      activeEffect.depsList = new Set();
+    }
+    activeEffect.depsList.add(deps);
   }
 }
 
@@ -30,7 +54,9 @@ function trigger(target, key, value, receiver) {
   if (depsMap) {
     const deps = depsMap.get(key);
     if (deps) {
-      deps.forEach((effect) => {
+      // 避免无限循环
+      const effects = new Set(deps);
+      effects.forEach((effect) => {
         effect();
       });
     }
