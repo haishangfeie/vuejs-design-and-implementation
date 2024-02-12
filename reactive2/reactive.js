@@ -9,8 +9,14 @@
   -》执行副作用函数的时，要找到与之关联的依赖集合
  */
 /**
+  已解决
   存在的问题：effect发生嵌套时，如果嵌套的effect执行后，再执行在外层的effect的依赖收集，此时activeEffect指向的仍然是嵌套的effect，导致依赖收集到错误的effect内
  */
+/**
+  存在问题：
+  当在副作用函数内发生读取，又赋值的操作，会导致追踪依赖收集，然后又在赋值时触发副作用函数，导致副作用函数不断的递归调用自身
+ */
+
 const effectStack = [];
 
 const cleanup = (effectFn) => {
@@ -62,7 +68,11 @@ function trigger(target, key, value, receiver) {
     if (deps) {
       // 避免无限循环
       const effects = new Set(deps);
+      const activeEffect = effectStack[effectStack.length - 1];
       effects.forEach((effect) => {
+        if (activeEffect === effect) {
+          return;
+        }
         effect();
       });
     }
