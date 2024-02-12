@@ -13,9 +13,14 @@
   存在的问题：effect发生嵌套时，如果嵌套的effect执行后，再执行在外层的effect的依赖收集，此时activeEffect指向的仍然是嵌套的effect，导致依赖收集到错误的effect内
  */
 /**
+  已解决
   存在问题：
   当在副作用函数内发生读取，又赋值的操作，会导致追踪依赖收集，然后又在赋值时触发副作用函数，导致副作用函数不断的递归调用自身
  */
+/* 
+  功能：副作用函数支持调度执行
+  调度执行：即控制副作用函数执行的时机&次数&方式
+*/
 
 const effectStack = [];
 
@@ -30,13 +35,14 @@ const cleanup = (effectFn) => {
   }
 };
 // 用来注册副作用函数
-export const effect = (fn) => {
+export const effect = (fn, options) => {
   const effectFn = () => {
     cleanup(effectFn);
     effectStack.push(effectFn);
     fn();
     effectStack.pop();
   };
+  effectFn.options = options;
   effectFn();
 };
 
@@ -73,7 +79,11 @@ function trigger(target, key, value, receiver) {
         if (activeEffect === effect) {
           return;
         }
-        effect();
+        if (effect.options.scheduler) {
+          effect.options.scheduler(effect);
+        } else {
+          effect();
+        }
       });
     }
   }
