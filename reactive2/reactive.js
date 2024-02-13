@@ -18,8 +18,12 @@
   当在副作用函数内发生读取，又赋值的操作，会导致追踪依赖收集，然后又在赋值时触发副作用函数，导致副作用函数不断的递归调用自身
  */
 /* 
+  已实现
   功能：副作用函数支持调度执行
   调度执行：即控制副作用函数执行的时机&次数&方式
+*/
+/* 
+  功能：添加lazy，不立即执行副作用函数，而是手动执行
 */
 
 const effectStack = [];
@@ -35,14 +39,18 @@ const cleanup = (effectFn) => {
   }
 };
 // 用来注册副作用函数
-export const effect = (fn, options) => {
+export const effect = (fn, options = {}) => {
   const effectFn = () => {
     cleanup(effectFn);
     effectStack.push(effectFn);
-    fn();
+    const value = fn();
     effectStack.pop();
+    return value;
   };
   effectFn.options = options;
+  if (options.lazy) {
+    return effectFn;
+  }
   effectFn();
 };
 
@@ -101,4 +109,29 @@ export const reactive = (obj) => {
       return true;
     },
   });
+};
+
+export const computed = (getter) => {
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler(fn) {
+      if (!dirty) {
+        dirty = true;
+        trigger(obj, 'value');
+      }
+    },
+  });
+  let dirty = true;
+  let val;
+  const obj = {
+    get value() {
+      track(obj, 'value');
+      if (dirty) {
+        dirty = false;
+        val = effectFn();
+      }
+      return val;
+    },
+  };
+  return obj;
 };
