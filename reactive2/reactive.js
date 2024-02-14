@@ -150,21 +150,39 @@ function traverse(obj, seen = new Set()) {
   return obj;
 }
 
-export const watch = (source, cb) => {
+/* 
+  options.flush pre|post|sync
+  sync是同步执行，post是调度函数将将副作用放到微任务队列中，并在dom更新结束后执行
+  而pre涉及组件的更新时间，暂时无法模拟
+*/
+export const watch = (source, cb, options = {}) => {
   let getter;
   if (typeof source === 'function') {
     getter = source;
   } else {
     getter = () => traverse(source);
   }
-
+  let oldValue;
+  const job = () => {
+    const newValue = effectFn();
+    cb(newValue, oldValue);
+    oldValue = newValue;
+  };
   const effectFn = effect(getter, {
     lazy: true,
     scheduler(fn) {
-      const newValue = fn();
-      cb(newValue, oldValue);
-      oldValue = newValue;
+      if (options.flush === 'post') {
+        const p = Promise.resolve();
+        p.then(job);
+      } else {
+        job();
+      }
     },
   });
-  let oldValue = effectFn();
+
+  if (options.immediate) {
+    job();
+  } else {
+    oldValue = effectFn();
+  }
 };
