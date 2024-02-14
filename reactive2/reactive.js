@@ -25,6 +25,9 @@
 /* 
   功能：添加lazy，不立即执行副作用函数，而是手动执行
 */
+/* 
+  功能：利用effect和option.scheduler可以实现watch
+*/
 
 const effectStack = [];
 
@@ -134,4 +137,34 @@ export const computed = (getter) => {
     },
   };
   return obj;
+};
+
+function traverse(obj, seen = new Set()) {
+  if (obj === null || typeof obj !== 'object' || seen.has(obj)) {
+    return;
+  }
+  seen.add(obj);
+  Object.keys(obj).forEach((key) => {
+    traverse(obj[key]);
+  });
+  return obj;
+}
+
+export const watch = (source, cb) => {
+  let getter;
+  if (typeof source === 'function') {
+    getter = source;
+  } else {
+    getter = () => traverse(source);
+  }
+
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler(fn) {
+      const newValue = fn();
+      cb(newValue, oldValue);
+      oldValue = newValue;
+    },
+  });
+  let oldValue = effectFn();
 };
