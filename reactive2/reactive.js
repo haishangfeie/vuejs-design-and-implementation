@@ -154,6 +154,10 @@ function traverse(obj, seen = new Set()) {
   options.flush pre|post|sync
   sync是同步执行，post是调度函数将将副作用放到微任务队列中，并在dom更新结束后执行
   而pre涉及组件的更新时间，暂时无法模拟
+  
+  其实这里，我有点疑惑，按照目前的实现 post，似乎做不到在dom更新结束后执行
+  vue在的实现确实是和现在的实现类似，post时是会放入后置队列中，而渲染函数是放到刷新队列中的，这两个队列都是微任务，而dom的更新是同步的，因此线执行刷新队列再执行后置队列就可以确保post时回调是在dom更新结束后执行。
+  我之所以原来有困惑是搞混了一个概念，就是dom更新并不等于页面渲染，页面渲染是在微任务清空后进行的，而dom更新是可以在微任务执行过程中执行的。
 */
 export const watch = (source, cb, options = {}) => {
   let getter;
