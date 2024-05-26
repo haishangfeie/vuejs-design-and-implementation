@@ -104,7 +104,7 @@ export const reactive = (obj) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
       track(target, key, receiver);
-      return target[key];
+      return Reflect.get(target, key, receiver);
     },
     set(target, key, value, receiver) {
       target[key] = value;

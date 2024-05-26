@@ -437,97 +437,97 @@ describe('响应式', () => {
       });
     });
   });
-  // describe('处理代理的各种读取的操作', () => {
-  //   test('访问访问器属性时，间接读取的属性修改可以触发响应', () => {
-  //     const obj = reactive({
-  //       text: 'hello world',
-  //       get bar() {
-  //         return this.text;
-  //       },
-  //     });
+  describe('处理代理的各种读取的操作', () => {
+    test('访问访问器属性时，间接读取的属性修改可以触发响应', () => {
+      const obj = reactive({
+        text: 'hello world',
+        get bar() {
+          return this.text;
+        },
+      });
 
-  //     const fn = jest.fn(() => {
-  //       const a = obj.bar;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text = 'hello vue';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('in操作符可以触发依赖收集', () => {
-  //     const obj = reactive({
-  //       text: 'hello world',
-  //     });
-  //     const fn = jest.fn();
-  //     effect(() => {
-  //       if ('text' in obj) {
-  //         fn();
-  //       }
-  //     });
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text = 'hello vue';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('for in可以触发依赖收集', () => {
-  //     const obj = reactive({
-  //       text: 'hello world',
-  //     });
-  //     const fn = jest.fn(() => {
-  //       for (let key in obj) {
-  //       }
-  //     });
-  //     effect(() => {
-  //       fn();
-  //     });
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text2 = 'hello vue';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     obj.text = 'hello world2';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('设置属性时，间接设置的属性可以触发副作用函数', () => {
-  //     const obj = reactive({
-  //       text: 'Tom',
-  //       get text2() {
-  //         return `Hello ${this.text}`;
-  //       },
-  //       set text2(val) {
-  //         const arr = val.split(' ');
-  //         this.text = arr[1] || '';
-  //       },
-  //     });
-  //     const fn = jest.fn(() => {
-  //       obj.text2;
-  //     });
-  //     effect(fn);
+      const fn = jest.fn(() => {
+        const a = obj.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('in操作符可以触发依赖收集', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn();
+      effect(() => {
+        if ('text' in obj) {
+          fn();
+        }
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('for in可以触发依赖收集', () => {
+      const obj = reactive({
+        text: 'hello world',
+      });
+      const fn = jest.fn(() => {
+        for (let key in obj) {
+        }
+      });
+      effect(() => {
+        fn();
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text2 = 'hello vue';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text = 'hello world2';
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('设置属性时，间接设置的属性可以触发副作用函数', () => {
+      const obj = reactive({
+        text: 'Tom',
+        get text2() {
+          return `Hello ${this.text}`;
+        },
+        set text2(val) {
+          const arr = val.split(' ');
+          this.text = arr[1] || '';
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.text2;
+      });
+      effect(fn);
 
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text = 'Mary';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     obj.text2 = 'hello 哈利';
-  //     expect(fn).toHaveBeenCalledTimes(4);
-  //   });
-  //   test('删除操作可以触发ITERATE_KEY相关联的副作用函数', () => {
-  //     const obj = reactive({
-  //       text: 'Tom',
-  //       get text2() {
-  //         return `Hello ${this.text}`;
-  //       },
-  //       set text2(val) {
-  //         const arr = val.split(' ');
-  //         this.text = arr[1] || '';
-  //       },
-  //     });
-  //     const fn = jest.fn(() => {
-  //       for (let key in obj) {
-  //       }
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     delete obj.text2;
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  // });
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Mary';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text2 = 'hello 哈利';
+      expect(fn).toHaveBeenCalledTimes(4);
+    });
+    test('删除操作可以触发ITERATE_KEY相关联的副作用函数', () => {
+      const obj = reactive({
+        text: 'Tom',
+        get text2() {
+          return `Hello ${this.text}`;
+        },
+        set text2(val) {
+          const arr = val.split(' ');
+          this.text = arr[1] || '';
+        },
+      });
+      const fn = jest.fn(() => {
+        for (let key in obj) {
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      delete obj.text2;
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+  });
   // describe('合理地触发响应', () => {
   //   test('值没有变化时不会触发响应', () => {
   //     const obj = reactive({
