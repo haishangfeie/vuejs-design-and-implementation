@@ -78,38 +78,83 @@ function track(target, key, receiver) {
   }
 }
 
-function trigger(target, key, value, receiver) {
+function trigger(target, key, type) {
   const depsMap = bucket.get(target);
   if (depsMap) {
     const deps = depsMap.get(key);
+
+    const effectToRun = new Set();
     if (deps) {
       // 避免无限循环
       const effects = new Set(deps);
       const activeEffect = effectStack[effectStack.length - 1];
       effects.forEach((effect) => {
-        if (activeEffect === effect) {
-          return;
-        }
-        if (effect.options.scheduler) {
-          effect.options.scheduler(effect);
-        } else {
-          effect();
+        if (activeEffect !== effect) {
+          effectToRun.add(effect);
         }
       });
     }
+    if (type === TRIGGER_TYPES.ADD || type === TRIGGER_TYPES.DELETE) {
+      const iterateDeps = depsMap.get(ITERATE_KEY);
+      if (iterateDeps) {
+        // 避免无限循环
+        const effects = new Set(iterateDeps);
+        const activeEffect = effectStack[effectStack.length - 1];
+        effects.forEach((effect) => {
+          if (activeEffect !== effect) {
+            effectToRun.add(effect);
+          }
+        });
+      }
+    }
+
+    effectToRun.forEach((effect) => {
+      if (effect.options.scheduler) {
+        effect.options.scheduler(effect);
+      } else {
+        effect();
+      }
+    });
   }
 }
 
+const ITERATE_KEY = Symbol();
+const TRIGGER_TYPES = {
+  ADD: 'ADD',
+  SET: 'SET',
+  DELETE: 'DELETE',
+};
 export const reactive = (obj) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
       track(target, key, receiver);
       return Reflect.get(target, key, receiver);
     },
+    // 拦截 key in obj
+    has(target, key) {
+      track(target, key);
+      return Reflect.has(target, key);
+    },
+    // 拦截 for ... in
+    ownKeys(target) {
+      track(target, ITERATE_KEY);
+      return Reflect.ownKeys(target);
+    },
     set(target, key, value, receiver) {
-      target[key] = value;
-      trigger(target, key, value, receiver);
-      return true;
+      const type = Object.prototype.hasOwnProperty.call(target, key)
+        ? TRIGGER_TYPES.SET
+        : TRIGGER_TYPES.ADD;
+      const res = Reflect.set(target, key, value, receiver);
+      trigger(target, key, type);
+      return res;
+    },
+    deleteProperty(target, key) {
+      const has = Object.prototype.hasOwnProperty.call(target, key);
+      const res = Reflect.deleteProperty(target, key);
+      if (res && has) {
+        trigger(target, key, TRIGGER_TYPES.DELETE);
+      }
+      return res;
     },
   });
 };
