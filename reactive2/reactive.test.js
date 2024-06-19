@@ -3,7 +3,7 @@ import {
   reactive,
   computed,
   watch,
-  // shallowReactive,
+  shallowReactive,
   // readonly,
   // shallowReadonly,
 } from './reactive';
@@ -528,104 +528,104 @@ describe('响应式', () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
   });
-  // describe('合理地触发响应', () => {
-  //   test('值没有变化时不会触发响应', () => {
-  //     const obj = reactive({
-  //       text: 'Tom',
-  //     });
-  //     const fn = jest.fn(() => {
-  //       obj.text;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text = 'Tom';
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.text = 'Tom2';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     obj.text = NaN;
-  //     expect(fn).toHaveBeenCalledTimes(3);
-  //     obj.text = NaN;
-  //     expect(fn).toHaveBeenCalledTimes(3);
-  //     obj.text = 1;
-  //     expect(fn).toHaveBeenCalledTimes(4);
-  //   });
-  //   test('避免实例原型的代理对象的set拦截函数被执行', () => {
-  //     const obj = {};
-  //     const proto = { bar: 1 };
-  //     const child = reactive(obj);
-  //     const parent = reactive(proto);
+  describe('合理地触发响应', () => {
+    test('值没有变化时不会触发响应', () => {
+      const obj = reactive({
+        text: 'Tom',
+      });
+      const fn = jest.fn(() => {
+        obj.text;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Tom';
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.text = 'Tom2';
+      expect(fn).toHaveBeenCalledTimes(2);
+      obj.text = NaN;
+      expect(fn).toHaveBeenCalledTimes(3);
+      obj.text = NaN;
+      expect(fn).toHaveBeenCalledTimes(3);
+      obj.text = 1;
+      expect(fn).toHaveBeenCalledTimes(4);
+    });
+    test('避免实例原型的代理对象的set拦截函数被执行', () => {
+      const obj = {};
+      const proto = { bar: 1 };
+      const child = reactive(obj);
+      const parent = reactive(proto);
 
-  //     // 使用parent作为child的原型
-  //     Object.setPrototypeOf(child, parent);
+      // 使用parent作为child的原型
+      Object.setPrototypeOf(child, parent);
 
-  //     const fn = jest.fn(() => {
-  //       child.bar;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     child.bar = 2;
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  // });
-  // describe('深响应&浅响应', () => {
-  //   test('reactive可以触发深响应', () => {
-  //     const obj = reactive({
-  //       foo: {
-  //         bar: 1,
-  //       },
-  //     });
-  //     const fn = jest.fn(() => {
-  //       obj.foo.bar;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.foo.bar = 2;
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('shallowReactive不会触发深响应', () => {
-  //     const obj = shallowReactive({
-  //       foo: {
-  //         bar: 1,
-  //       },
-  //     });
-  //     const fn = jest.fn(() => {
-  //       obj.foo.bar;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     obj.foo.bar = 2;
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //   });
-  //   test('只读对象修改时不会生效', () => {
-  //     const obj = readonly({
-  //       foo: {
-  //         bar: 1,
-  //       },
-  //     });
-  //     const old = obj.foo;
-  //     obj.foo = 1;
-  //     expect(obj.foo).toStrictEqual(old);
-  //     obj.foo.bar = 2;
-  //     obj.foo.name = 'name';
-  //     expect(obj.foo.bar).toBe(1);
-  //     expect(obj.foo.name).toBe(undefined);
-  //   });
-  //   test('浅只读对象修改修改浅层时不能修改，但是可以修改深层的数据', () => {
-  //     const obj = shallowReadonly({
-  //       foo: {
-  //         bar: 1,
-  //       },
-  //     });
+      const fn = jest.fn(() => {
+        child.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      child.bar = 2;
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+  });
+  describe('深响应-浅响应', () => {
+    test('reactive可以触发深响应', () => {
+      const obj = reactive({
+        foo: {
+          bar: 1,
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.foo.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.foo.bar = 2;
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('shallowReactive不会触发深响应', () => {
+      const obj = shallowReactive({
+        foo: {
+          bar: 1,
+        },
+      });
+      const fn = jest.fn(() => {
+        obj.foo.bar;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      obj.foo.bar = 2;
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+    // test('只读对象修改时不会生效', () => {
+    //   const obj = readonly({
+    //     foo: {
+    //       bar: 1,
+    //     },
+    //   });
+    //   const old = obj.foo;
+    //   obj.foo = 1;
+    //   expect(obj.foo).toStrictEqual(old);
+    //   obj.foo.bar = 2;
+    //   obj.foo.name = 'name';
+    //   expect(obj.foo.bar).toBe(1);
+    //   expect(obj.foo.name).toBe(undefined);
+    // });
+    // test('浅只读对象修改修改浅层时不能修改，但是可以修改深层的数据', () => {
+    //   const obj = shallowReadonly({
+    //     foo: {
+    //       bar: 1,
+    //     },
+    //   });
 
-  //     const old = obj.foo;
-  //     obj.foo = 1;
-  //     expect(obj.foo).toStrictEqual(old);
-  //     obj.foo.bar = 2;
-  //     obj.foo.name = 'name';
-  //     expect(obj.foo.bar).toBe(2);
-  //     expect(obj.foo.name).toBe('name');
-  //   });
-  // });
+    //   const old = obj.foo;
+    //   obj.foo = 1;
+    //   expect(obj.foo).toStrictEqual(old);
+    //   obj.foo.bar = 2;
+    //   obj.foo.name = 'name';
+    //   expect(obj.foo.bar).toBe(2);
+    //   expect(obj.foo.name).toBe('name');
+    // });
+  });
   // describe('代理数组', () => {
   //   test('设置数组索引值导致arr.length变化时，会触发与arr.length相关联的响应式', () => {
   //     const arr = reactive(['foo']);
