@@ -141,11 +141,16 @@ export const reactive = (obj) => {
       return Reflect.ownKeys(target);
     },
     set(target, key, value, receiver) {
+      const prev = target[key];
       const type = Object.prototype.hasOwnProperty.call(target, key)
         ? TRIGGER_TYPES.SET
         : TRIGGER_TYPES.ADD;
       const res = Reflect.set(target, key, value, receiver);
-      trigger(target, key, type);
+      // 考虑NaN的情况
+      if (prev !== value && (prev === prev || value === value)) {
+        trigger(target, key, type);
+      }
+
       return res;
     },
     deleteProperty(target, key) {
