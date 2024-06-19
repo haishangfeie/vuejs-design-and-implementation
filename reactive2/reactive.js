@@ -127,6 +127,9 @@ const TRIGGER_TYPES = {
 export const reactive = (obj) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
+      if (key === 'raw') {
+        return target;
+      }
       track(target, key, receiver);
       return Reflect.get(target, key, receiver);
     },
@@ -146,10 +149,13 @@ export const reactive = (obj) => {
         ? TRIGGER_TYPES.SET
         : TRIGGER_TYPES.ADD;
       const res = Reflect.set(target, key, value, receiver);
-      // 考虑NaN的情况
-      if (prev !== value && (prev === prev || value === value)) {
-        trigger(target, key, type);
+      if (target === receiver.raw) {
+        // 考虑NaN的情况
+        if (prev !== value && (prev === prev || value === value)) {
+          trigger(target, key, type);
+        }
       }
+
 
       return res;
     },
