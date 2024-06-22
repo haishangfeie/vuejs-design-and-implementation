@@ -4,8 +4,8 @@ import {
   computed,
   watch,
   shallowReactive,
-  // readonly,
-  // shallowReadonly,
+  readonly,
+  shallowReadonly,
 } from './reactive';
 import { jest } from '@jest/globals';
 describe('响应式', () => {
@@ -596,203 +596,203 @@ describe('响应式', () => {
       obj.foo.bar = 2;
       expect(fn).toHaveBeenCalledTimes(1);
     });
-    // test('只读对象修改时不会生效', () => {
-    //   const obj = readonly({
-    //     foo: {
-    //       bar: 1,
-    //     },
-    //   });
-    //   const old = obj.foo;
-    //   obj.foo = 1;
-    //   expect(obj.foo).toStrictEqual(old);
-    //   obj.foo.bar = 2;
-    //   obj.foo.name = 'name';
-    //   expect(obj.foo.bar).toBe(1);
-    //   expect(obj.foo.name).toBe(undefined);
-    // });
-    // test('浅只读对象修改修改浅层时不能修改，但是可以修改深层的数据', () => {
-    //   const obj = shallowReadonly({
-    //     foo: {
-    //       bar: 1,
-    //     },
-    //   });
+    test('只读对象修改时不会生效', () => {
+      const obj = readonly({
+        foo: {
+          bar: 1,
+        },
+      });
+      const old = obj.foo;
+      obj.foo = 1;
+      expect(obj.foo).toStrictEqual(old);
+      obj.foo.bar = 2;
+      obj.foo.name = 'name';
+      expect(obj.foo.bar).toBe(1);
+      expect(obj.foo.name).toBe(undefined);
+    });
+    test('浅只读对象修改修改浅层时不能修改，但是可以修改深层的数据', () => {
+      const obj = shallowReadonly({
+        foo: {
+          bar: 1,
+        },
+      });
 
-    //   const old = obj.foo;
-    //   obj.foo = 1;
-    //   expect(obj.foo).toStrictEqual(old);
-    //   obj.foo.bar = 2;
-    //   obj.foo.name = 'name';
-    //   expect(obj.foo.bar).toBe(2);
-    //   expect(obj.foo.name).toBe('name');
-    // });
+      const old = obj.foo;
+      obj.foo = 1;
+      expect(obj.foo).toStrictEqual(old);
+      obj.foo.bar = 2;
+      obj.foo.name = 'name';
+      expect(obj.foo.bar).toBe(2);
+      expect(obj.foo.name).toBe('name');
+    });
   });
-  // describe('代理数组', () => {
-  //   test('设置数组索引值导致arr.length变化时，会触发与arr.length相关联的响应式', () => {
-  //     const arr = reactive(['foo']);
-  //     const fn = jest.fn(() => {
-  //       arr.length;
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     // 设置索引1的值，会导致数组长度变化
-  //     arr[1] = 'bar';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
-  //     const arr = reactive(['foo']);
-  //     const fn = jest.fn(() => {
-  //       arr[0];
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     // 设置索引1的值，会导致数组长度变化
-  //     arr.length = 0;
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //   });
-  //   test('数组 for in遍历数组，发生影响遍历结果的操作时副作用函数要重新执行', () => {
-  //     const arr = reactive(['foo']);
-  //     const fn = jest.fn(() => {
-  //       for (const key in arr) {
-  //         key;
-  //       }
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     arr[2] = 'bar';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     arr.length = 10;
-  //     expect(fn).toHaveBeenCalledTimes(3);
-  //   });
-  //   test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-1', () => {
-  //     const arr = reactive([1, 2, 3, 4, 5]);
-  //     const fn = jest.fn(() => {
-  //       for (const val of arr) {
-  //         val;
-  //       }
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     arr[1] = 'bar';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     arr.length = 10;
-  //     expect(fn).toHaveBeenCalledTimes(3);
-  //   });
-  //   test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-2', () => {
-  //     const arr = reactive([1, 2, 3, 4, 5]);
-  //     const fn = jest.fn(() => {
-  //       for (const val of arr.values()) {
-  //         val;
-  //       }
-  //     });
-  //     effect(fn);
-  //     expect(fn).toHaveBeenCalledTimes(1);
-  //     arr[1] = 'bar';
-  //     expect(fn).toHaveBeenCalledTimes(2);
-  //     arr.length = 10;
-  //     expect(fn).toHaveBeenCalledTimes(3);
-  //   });
-  //   test('reactive创建代理对象时，如果原始对象已经存在代理对象，会返回原有的代理对象', () => {
-  //     const arr = [{}];
-  //     const proxy1 = reactive(arr);
-  //     const proxy2 = reactive(arr);
-  //     expect(proxy1).toBe(proxy2);
-  //   });
-  //   test('访问代理数组没有被修改元素时，每次访问到同一个代理对象', () => {
-  //     const obj = {};
-  //     const arr = reactive([obj]);
-  //     expect(arr[0] === arr[0]).toBe(true);
-  //     expect(arr.includes(arr[0])).toBe(true);
-  //   });
-  //   test('数组使用includes/indexOf/lastIndexOf方法寻找代理数组元素对应的原始对象时，应该要返回true/对应索引', () => {
-  //     const obj = {};
-  //     const obj2 = {};
-  //     const arr1 = reactive([obj, obj2, obj2]);
-  //     const arr2 = reactive([obj, obj, obj2]);
-  //     expect(arr1.includes(obj)).toBe(true);
-  //     expect(arr1.includes(obj, 1)).toBe(false);
-  //     expect(arr2.includes(obj, 1)).toBe(true);
+  describe('代理数组', () => {
+    test('设置数组索引值导致arr.length变化时，会触发与arr.length相关联的响应式', () => {
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        arr.length;
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      // 设置索引1的值，会导致数组长度变化
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('设置arr.length导致数组元素值发生变化时可以触发相关元素关联的响应式', () => {
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        arr[0];
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      // 设置索引1的值，会导致数组长度变化
+      arr.length = 0;
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+    test('数组 for in遍历数组，发生影响遍历结果的操作时副作用函数要重新执行', () => {
+      const arr = reactive(['foo']);
+      const fn = jest.fn(() => {
+        for (const key in arr) {
+          key;
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[2] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-1', () => {
+      const arr = reactive([1, 2, 3, 4, 5]);
+      const fn = jest.fn(() => {
+        for (const val of arr) {
+          val;
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('数组 for of 遍历可迭代对象时，需要副作用函数与数组长度和索引之间建立响应式联系-2', () => {
+      const arr = reactive([1, 2, 3, 4, 5]);
+      const fn = jest.fn(() => {
+        for (const val of arr.values()) {
+          val;
+        }
+      });
+      effect(fn);
+      expect(fn).toHaveBeenCalledTimes(1);
+      arr[1] = 'bar';
+      expect(fn).toHaveBeenCalledTimes(2);
+      arr.length = 10;
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('reactive创建代理对象时，如果原始对象已经存在代理对象，会返回原有的代理对象', () => {
+      const arr = [{}];
+      const proxy1 = reactive(arr);
+      const proxy2 = reactive(arr);
+      expect(proxy1).toBe(proxy2);
+    });
+    test('访问代理数组没有被修改元素时，每次访问到同一个代理对象', () => {
+      const obj = {};
+      const arr = reactive([obj]);
+      expect(arr[0] === arr[0]).toBe(true);
+      expect(arr.includes(arr[0])).toBe(true);
+    });
+    test('数组使用includes/indexOf/lastIndexOf方法寻找代理数组元素对应的原始对象时，应该要返回true/对应索引', () => {
+      const obj = {};
+      const obj2 = {};
+      const arr1 = reactive([obj, obj2, obj2]);
+      const arr2 = reactive([obj, obj, obj2]);
+      expect(arr1.includes(obj)).toBe(true);
+      expect(arr1.includes(obj, 1)).toBe(false);
+      expect(arr2.includes(obj, 1)).toBe(true);
 
-  //     expect(arr1.indexOf(obj)).toBe(0);
-  //     expect(arr1.indexOf(obj, 1)).toBe(-1);
-  //     expect(arr1.indexOf(obj2, 1)).toBe(1);
-  //     expect(arr1.indexOf(obj2, 2)).toBe(2);
+      expect(arr1.indexOf(obj)).toBe(0);
+      expect(arr1.indexOf(obj, 1)).toBe(-1);
+      expect(arr1.indexOf(obj2, 1)).toBe(1);
+      expect(arr1.indexOf(obj2, 2)).toBe(2);
 
-  //     expect(arr1.lastIndexOf(obj2)).toBe(2);
-  //     expect(arr1.lastIndexOf(obj2, 1)).toBe(1);
-  //     expect(arr1.lastIndexOf(obj2, 0)).toBe(-1);
-  //   });
-  //   test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-1', () => {
-  //     // 类似的，还应该有pop/unshift/shift/splice等方法的用例
-  //     const arr = reactive([]);
-  //     const fn1 = jest.fn(() => {
-  //       arr.push(1);
-  //     });
-  //     const fn2 = jest.fn(() => {
-  //       arr.push(1);
-  //     });
-  //     effect(fn1);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     effect(fn2);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     expect(fn2).toHaveBeenCalledTimes(1);
-  //   });
-  //   test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-2', () => {
-  //     const arr = reactive([1, 2, 3]);
-  //     const fn1 = jest.fn(() => {
-  //       arr.pop();
-  //     });
-  //     const fn2 = jest.fn(() => {
-  //       arr.pop();
-  //     });
-  //     effect(fn1);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     effect(fn2);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     expect(fn2).toHaveBeenCalledTimes(1);
-  //   });
-  //   test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-3', () => {
-  //     const arr = reactive([]);
-  //     const fn1 = jest.fn(() => {
-  //       arr.unshift(1);
-  //     });
-  //     const fn2 = jest.fn(() => {
-  //       arr.unshift(1);
-  //     });
-  //     effect(fn1);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     effect(fn2);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     expect(fn2).toHaveBeenCalledTimes(1);
-  //   });
-  //   test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-4', () => {
-  //     const arr = reactive([1, 2, 3]);
-  //     const fn1 = jest.fn(() => {
-  //       arr.shift();
-  //     });
-  //     const fn2 = jest.fn(() => {
-  //       arr.shift();
-  //     });
-  //     effect(fn1);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     effect(fn2);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     expect(fn2).toHaveBeenCalledTimes(1);
-  //   });
-  //   test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-5', () => {
-  //     const arr = reactive([1, 2, 3]);
-  //     const fn1 = jest.fn(() => {
-  //       arr.splice(1, 1);
-  //     });
-  //     const fn2 = jest.fn(() => {
-  //       arr.splice(1, 1);
-  //     });
-  //     effect(fn1);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     effect(fn2);
-  //     expect(fn1).toHaveBeenCalledTimes(1);
-  //     expect(fn2).toHaveBeenCalledTimes(1);
-  //   });
-  // });
+      expect(arr1.lastIndexOf(obj2)).toBe(2);
+      expect(arr1.lastIndexOf(obj2, 1)).toBe(1);
+      expect(arr1.lastIndexOf(obj2, 0)).toBe(-1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-1', () => {
+      // 类似的，还应该有pop/unshift/shift/splice等方法的用例
+      const arr = reactive([]);
+      const fn1 = jest.fn(() => {
+        arr.push(1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.push(1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-2', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.pop();
+      });
+      const fn2 = jest.fn(() => {
+        arr.pop();
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-3', () => {
+      const arr = reactive([]);
+      const fn1 = jest.fn(() => {
+        arr.unshift(1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.unshift(1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-4', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.shift();
+      });
+      const fn2 = jest.fn(() => {
+        arr.shift();
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+    test('隐式修改数组长度的原型的修改操作的方法不会建立length属性与副作用函数间的联系-5', () => {
+      const arr = reactive([1, 2, 3]);
+      const fn1 = jest.fn(() => {
+        arr.splice(1, 1);
+      });
+      const fn2 = jest.fn(() => {
+        arr.splice(1, 1);
+      });
+      effect(fn1);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      effect(fn2);
+      expect(fn1).toHaveBeenCalledTimes(1);
+      expect(fn2).toHaveBeenCalledTimes(1);
+    });
+  });
   // describe('代理Set', () => {
   //   test('能从Set的响应式对象中读取到size的值', () => {
   //     const s = new Set([1, 2, 3]);

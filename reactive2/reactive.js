@@ -78,19 +78,40 @@ function track(target, key, receiver) {
   }
 }
 
-function trigger(target, key, type) {
+function trigger(target, key, type, newVal) {
   const depsMap = bucket.get(target);
   if (depsMap) {
     const deps = depsMap.get(key);
 
     const effectToRun = new Set();
+    const activeEffect = effectStack[effectStack.length - 1];
     if (deps) {
       // 避免无限循环
       const effects = new Set(deps);
-      const activeEffect = effectStack[effectStack.length - 1];
       effects.forEach((effect) => {
         if (activeEffect !== effect) {
           effectToRun.add(effect);
+        }
+      });
+    }
+    if (Array.isArray(target) && type === TRIGGER_TYPES.ADD) {
+      const lengthEffects = depsMap.get('length');
+      if (lengthEffects) {
+        lengthEffects.forEach((effect) => {
+          if (activeEffect !== effect) {
+            effectToRun.add(effect);
+          }
+        });
+      }
+    }
+    if (Array.isArray(target) && key === 'length') {
+      depsMap.forEach((deps, key) => {
+        if (key >= newVal) {
+          deps.forEach((effect) => {
+            if (activeEffect !== effect) {
+              effectToRun.add(effect);
+            }
+          });
         }
       });
     }
@@ -124,20 +145,38 @@ const TRIGGER_TYPES = {
   SET: 'SET',
   DELETE: 'DELETE',
 };
-const createReactive = (obj, isShallow = false) => {
+
+const reactiveMap = new Map();
+
+const includesOriginMethod = Array.prototype.includes;
+const ArrayMapMethods = {
+  includes(...args) {
+    let res = includesOriginMethod.apply(this, args);
+    if (!res) {
+      res = includesOriginMethod.apply(this.raw, args);
+    }
+    return res;
+  },
+};
+const createReactive = (obj, isShallow = false, isReadonly = false) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
       if (key === 'raw') {
         return target;
       }
+      if (!isReadonly && typeof key !== 'symbol') {
+        track(target, key, receiver);
+      }
+      if (Array.isArray(target) && ArrayMapMethods.hasOwnProperty(key)) {
+        return Reflect.get(ArrayMapMethods, key, receiver);
+      }
 
-      track(target, key, receiver);
       const res = Reflect.get(target, key, receiver);
       if (isShallow) {
         return res;
       }
       if (typeof res === 'object' && res !== null) {
-        return reactive(res);
+        return isReadonly ? readonly(res) : reactive(res);
       }
       return res;
     },
@@ -148,25 +187,37 @@ const createReactive = (obj, isShallow = false) => {
     },
     // 拦截 for ... in
     ownKeys(target) {
-      track(target, ITERATE_KEY);
+      track(target, Array.isArray(target) ? 'length' : ITERATE_KEY);
       return Reflect.ownKeys(target);
     },
     set(target, key, value, receiver) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读的`);
+        return true;
+      }
       const prev = target[key];
-      const type = Object.prototype.hasOwnProperty.call(target, key)
+      const type = Array.isArray(target)
+        ? Number(key) < target.length
+          ? TRIGGER_TYPES.SET
+          : TRIGGER_TYPES.ADD
+        : Object.prototype.hasOwnProperty.call(target, key)
         ? TRIGGER_TYPES.SET
         : TRIGGER_TYPES.ADD;
       const res = Reflect.set(target, key, value, receiver);
       if (target === receiver.raw) {
         // 考虑NaN的情况
         if (prev !== value && (prev === prev || value === value)) {
-          trigger(target, key, type);
+          trigger(target, key, type, value);
         }
       }
 
       return res;
     },
     deleteProperty(target, key) {
+      if (isReadonly) {
+        console.warn(`属性${key}是只读的`);
+        return true;
+      }
       const has = Object.prototype.hasOwnProperty.call(target, key);
       const res = Reflect.deleteProperty(target, key);
       if (res && has) {
@@ -178,11 +229,24 @@ const createReactive = (obj, isShallow = false) => {
 };
 
 export const reactive = (obj) => {
-  return createReactive(obj);
+  if (reactiveMap.has(obj)) {
+    return reactiveMap.get(obj);
+  }
+  const proxy = createReactive(obj);
+  reactiveMap.set(obj, proxy);
+  return proxy;
 };
 
 export const shallowReactive = (obj) => {
   return createReactive(obj, true);
+};
+
+export const readonly = (obj) => {
+  return createReactive(obj, false, true);
+};
+
+export const shallowReadonly = (obj) => {
+  return createReactive(obj, true, true);
 };
 
 export const computed = (getter) => {
