@@ -148,6 +148,17 @@ const TRIGGER_TYPES = {
 
 const reactiveMap = new Map();
 
+const arrayInstrumentations = {};
+['includes', 'indexOf', 'lastIndexOf'].forEach((method) => {
+  arrayInstrumentations[method] = function (...args) {
+    const originMethod = Array.prototype[method];
+    let res = originMethod.apply(this, args);
+    if (!res || res === -1) {
+      res = originMethod.apply(this.raw, args);
+    }
+    return res;
+  };
+});
 const includesOriginMethod = Array.prototype.includes;
 const ArrayMapMethods = {
   includes(...args) {
@@ -167,8 +178,8 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
       if (!isReadonly && typeof key !== 'symbol') {
         track(target, key, receiver);
       }
-      if (Array.isArray(target) && ArrayMapMethods.hasOwnProperty(key)) {
-        return Reflect.get(ArrayMapMethods, key, receiver);
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+        return Reflect.get(arrayInstrumentations, key, receiver);
       }
 
       const res = Reflect.get(target, key, receiver);
