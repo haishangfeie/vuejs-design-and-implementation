@@ -160,15 +160,16 @@ const arrayInstrumentations = {};
     return res;
   };
 });
-
 let shouldTrack = true;
-const pushOriginMethod = Array.prototype.push;
-arrayInstrumentations.push = function (...args) {
-  shouldTrack = false;
-  const res = pushOriginMethod.apply(this, args);
-  shouldTrack = true;
-  return res;
-};
+['push', 'pop', 'unshift', 'shift', 'splice'].forEach((method) => {
+  const originMethod = Array.prototype[method];
+  arrayInstrumentations[method] = function (...args) {
+    shouldTrack = false;
+    const res = originMethod.apply(this, args);
+    shouldTrack = true;
+    return res;
+  };
+});
 
 const createReactive = (obj, isShallow = false, isReadonly = false) => {
   return new Proxy(obj, {
