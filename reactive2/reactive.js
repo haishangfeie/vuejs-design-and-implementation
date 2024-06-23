@@ -61,21 +61,22 @@ const bucket = new WeakMap();
 
 function track(target, key, receiver) {
   const activeEffect = effectStack[effectStack.length - 1];
-  if (activeEffect) {
-    if (!bucket.has(target)) {
-      bucket.set(target, new Map());
-    }
-    const depsMap = bucket.get(target);
-    if (!depsMap.has(key)) {
-      depsMap.set(key, new Set());
-    }
-    const deps = depsMap.get(key);
-    deps.add(activeEffect);
-    if (!activeEffect.depsList) {
-      activeEffect.depsList = new Set();
-    }
-    activeEffect.depsList.add(deps);
+  if (!activeEffect || !shouldTrack) {
+    return;
   }
+  if (!bucket.has(target)) {
+    bucket.set(target, new Map());
+  }
+  const depsMap = bucket.get(target);
+  if (!depsMap.has(key)) {
+    depsMap.set(key, new Set());
+  }
+  const deps = depsMap.get(key);
+  deps.add(activeEffect);
+  if (!activeEffect.depsList) {
+    activeEffect.depsList = new Set();
+  }
+  activeEffect.depsList.add(deps);
 }
 
 function trigger(target, key, type, newVal) {
@@ -159,16 +160,16 @@ const arrayInstrumentations = {};
     return res;
   };
 });
-const includesOriginMethod = Array.prototype.includes;
-const ArrayMapMethods = {
-  includes(...args) {
-    let res = includesOriginMethod.apply(this, args);
-    if (!res) {
-      res = includesOriginMethod.apply(this.raw, args);
-    }
-    return res;
-  },
+
+let shouldTrack = true;
+const pushOriginMethod = Array.prototype.push;
+arrayInstrumentations.push = function (...args) {
+  shouldTrack = false;
+  const res = pushOriginMethod.apply(this, args);
+  shouldTrack = true;
+  return res;
 };
+
 const createReactive = (obj, isShallow = false, isReadonly = false) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
