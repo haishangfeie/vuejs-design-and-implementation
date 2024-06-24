@@ -59,7 +59,7 @@ export const effect = (fn, options = {}) => {
 
 const bucket = new WeakMap();
 
-function track(target, key, receiver) {
+function track(target, key) {
   const activeEffect = effectStack[effectStack.length - 1];
   if (!activeEffect || !shouldTrack) {
     return;
@@ -171,20 +171,44 @@ let shouldTrack = true;
   };
 });
 
+const mutableInstrumentations = {
+  add(key) {
+    const target = this.raw;
+    const hasKey = target.has(key);
+    const res = target.add(key);
+
+    if (!hasKey) {
+      trigger(target, key, TRIGGER_TYPES.ADD);
+    }
+
+    return res;
+  },
+};
+
 const createReactive = (obj, isShallow = false, isReadonly = false) => {
   return new Proxy(obj, {
     get(target, key, receiver) {
       if (key === 'raw') {
         return target;
       }
+
+      if (target instanceof Set) {
+        if (key === 'size') {
+          track(target, ITERATE_KEY);
+          return Reflect.get(target, key, target);
+        } else {
+          return mutableInstrumentations[key];
+        }
+      }
       if (!isReadonly && typeof key !== 'symbol') {
-        track(target, key, receiver);
+        track(target, key);
       }
       if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
         return Reflect.get(arrayInstrumentations, key, receiver);
       }
 
-      const res = Reflect.get(target, key, receiver);
+      let res = Reflect.get(target, key, receiver);
+
       if (isShallow) {
         return res;
       }
