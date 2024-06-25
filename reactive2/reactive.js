@@ -140,7 +140,8 @@ function trigger(target, key, type, newVal) {
   }
 }
 
-const ITERATE_KEY = Symbol();
+const ITERATE_KEY = Symbol('iterate');
+const RAW_KEY = Symbol('raw');
 const TRIGGER_TYPES = {
   ADD: 'ADD',
   SET: 'SET',
@@ -155,7 +156,7 @@ const arrayInstrumentations = {};
     const originMethod = Array.prototype[method];
     let res = originMethod.apply(this, args);
     if (!res || res === -1) {
-      res = originMethod.apply(this.raw, args);
+      res = originMethod.apply(this[RAW_KEY], args);
     }
     return res;
   };
@@ -171,28 +172,65 @@ let shouldTrack = true;
   };
 });
 
-const mutableInstrumentations = {
-  add(key) {
-    const target = this.raw;
-    const hasKey = target.has(key);
-    const res = target.add(key);
-
-    if (!hasKey) {
-      trigger(target, key, TRIGGER_TYPES.ADD);
-    }
-
-    return res;
-  },
-};
-
 const createReactive = (obj, isShallow = false, isReadonly = false) => {
+  const mutableInstrumentations = {
+    add(key) {
+      const target = this[RAW_KEY];
+      const hasKey = target.has(key);
+
+      const rawKey = key[RAW_KEY] || key;
+      const res = target.add(rawKey);
+
+      if (!hasKey) {
+        trigger(target, key, TRIGGER_TYPES.ADD);
+      }
+
+      return res;
+    },
+    delete(key) {
+      const target = this[RAW_KEY];
+      const hasKey = target.has(key);
+
+      const res = target.delete(key);
+      if (hasKey) {
+        trigger(target, key, TRIGGER_TYPES.DELETE);
+      }
+      return res;
+    },
+    get(key) {
+      const target = this[RAW_KEY];
+
+      const hasKey = target.get(key);
+
+      track(target, key);
+
+      if (hasKey) {
+        const res = target.get(key);
+        return typeof res === 'object' && !isReadonly ? reactive(res) : res;
+      }
+    },
+    set(key, value) {
+      const target = this[RAW_KEY];
+
+      const had = target.has(key);
+      const oldVal = target.get(key);
+      const rawValue = value[RAW_KEY] || value;
+      const res = target.set(key, rawValue);
+      if (!had) {
+        trigger(target, key, TRIGGER_TYPES.ADD);
+      } else if (oldVal !== value && (oldVal === oldVal || value === value)) {
+        trigger(target, key, TRIGGER_TYPES.SET);
+      }
+      return res;
+    },
+  };
   return new Proxy(obj, {
     get(target, key, receiver) {
-      if (key === 'raw') {
+      if (key === RAW_KEY) {
         return target;
       }
 
-      if (target instanceof Set) {
+      if (target instanceof Set || target instanceof Map) {
         if (key === 'size') {
           track(target, ITERATE_KEY);
           return Reflect.get(target, key, target);
@@ -241,7 +279,7 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
         ? TRIGGER_TYPES.SET
         : TRIGGER_TYPES.ADD;
       const res = Reflect.set(target, key, value, receiver);
-      if (target === receiver.raw) {
+      if (target === receiver[RAW_KEY]) {
         // 考虑NaN的情况
         if (prev !== value && (prev === prev || value === value)) {
           trigger(target, key, type, value);
@@ -292,7 +330,7 @@ export const computed = (getter) => {
     scheduler(fn) {
       if (!dirty) {
         dirty = true;
-        trigger(obj, 'value');
+        trigger(obj, 'value', TRIGGER_TYPES.SET);
       }
     },
   });
