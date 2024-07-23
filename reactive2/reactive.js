@@ -223,6 +223,11 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
       }
       return res;
     },
+    forEach(cb) {
+      const target = this[RAW_KEY];
+      track(target, ITERATE_KEY);
+      target.forEach(cb);
+    },
   };
   return new Proxy(obj, {
     get(target, key, receiver) {
