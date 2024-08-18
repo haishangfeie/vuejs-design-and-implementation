@@ -294,7 +294,7 @@ describe('响应式', () => {
       const obj = reactive({
         text: 'hello world',
       });
-      const fn = jest.fn((newVal, oldVal) => {});
+      const fn = jest.fn((newVal, oldVal) => { });
       watch(() => obj.text, fn);
       expect(fn).toHaveBeenCalledTimes(0);
       obj.text = 'hello vue';
@@ -304,7 +304,7 @@ describe('响应式', () => {
       const obj2 = reactive({
         text: 'hello world',
       });
-      const fn2 = jest.fn((newVal, oldVal) => {});
+      const fn2 = jest.fn((newVal, oldVal) => { });
       watch(obj2, fn2);
       expect(fn2).toHaveBeenCalledTimes(0);
       obj2.text = 'hello vue';
@@ -315,7 +315,7 @@ describe('响应式', () => {
       const obj = reactive({
         text: 'hello world',
       });
-      const fn = jest.fn((newVal, oldVal) => {});
+      const fn = jest.fn((newVal, oldVal) => { });
       watch(() => obj.text, fn, {
         immediate: true,
       });
@@ -331,7 +331,7 @@ describe('响应式', () => {
       const obj = reactive({
         text: 'hello world',
       });
-      const fn = jest.fn((newVal, oldVal) => {});
+      const fn = jest.fn((newVal, oldVal) => { });
       watch(() => obj.text, fn, {
         flush: 'post',
       });
@@ -793,11 +793,76 @@ describe('响应式', () => {
       expect(fn2).toHaveBeenCalledTimes(1);
     });
   });
+  describe('代理map', () => {
+    test('新增和删除可以触发响应式', () => {
+      const proxy = reactive(
+        new Map([
+          ['key1', 1],
+          ['key2', 2],
+        ])
+      );
+      const fn = jest.fn(() => {
+        proxy.forEach((item, index) => {
+          item;
+          index;
+        });
+      });
+      effect(() => {
+        fn();
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+
+      proxy.set('key3', 3);
+      expect(fn).toHaveBeenCalledTimes(2);
+
+      proxy.delete('key2');
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+    test('Map类型响应式数据使用迭代器迭代时，修改值可以触发迭代', () => {
+      const p = reactive(new Map([
+        ['key1', 'value1'],
+        ['key2', 'value2']
+      ]))
+      const fn = jest.fn(() => {
+        for (const [key, value] of p) {
+        }
+      })
+      effect(fn)
+      expect(fn).toHaveBeenCalledTimes(1);
+      p.set('key3', 'value3')
+      expect(fn).toHaveBeenCalledTimes(2);
+      p.set('key1', 'value1')
+      expect(fn).toHaveBeenCalledTimes(2);
+      p.set('key1', 'value11')
+      expect(fn).toHaveBeenCalledTimes(3);
+    })
+  });
   describe('代理Set', () => {
     test('能从Set的响应式对象中读取到size的值', () => {
       const s = new Set([1, 2, 3]);
       const p = reactive(s);
       expect(p.size).toBe(3);
+    });
+    test('新增和删除可以触发响应式', () => {
+      const proxy = reactive(new Set([1, 2]));
+      const fn = jest.fn(() => {
+        proxy.forEach((item) => {
+          item;
+        });
+      });
+      effect(() => {
+        fn();
+      });
+      expect(fn).toHaveBeenCalledTimes(1);
+
+      proxy.add(3);
+      expect(fn).toHaveBeenCalledTimes(2);
+
+      proxy.add(2);
+      expect(fn).toHaveBeenCalledTimes(2);
+
+      proxy.delete(1);
+      expect(fn).toHaveBeenCalledTimes(3);
     });
     test('能从Set的响应式对象删除元素', () => {
       const s = new Set([1, 2, 3]);

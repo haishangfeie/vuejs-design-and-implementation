@@ -116,7 +116,12 @@ function trigger(target, key, type, newVal) {
         }
       });
     }
-    if (type === TRIGGER_TYPES.ADD || type === TRIGGER_TYPES.DELETE) {
+    if (
+      type === TRIGGER_TYPES.ADD ||
+      type === TRIGGER_TYPES.DELETE ||
+      (type === TRIGGER_TYPES.SET &&
+        Object.prototype.toString.call(target) === '[object Map]')
+    ) {
       const iterateDeps = depsMap.get(ITERATE_KEY);
       if (iterateDeps) {
         // 避免无限循环
@@ -173,7 +178,32 @@ let shouldTrack = true;
 });
 
 const createReactive = (obj, isShallow = false, isReadonly = false) => {
+  const wrap = (val) => {
+    if (isShallow) {
+      return val;
+    }
+    if (typeof val === 'object' && val !== null) {
+      return createReactive(val, false, isReadonly);
+    }
+    return val;
+  };
   const mutableInstrumentations = {
+    [Symbol.iterator]() {
+      const target = this[RAW_KEY]
+      const itr = target[Symbol.iterator]()
+
+      track(target, ITERATE_KEY)
+      return {
+        next() {
+          let { value, done } = itr.next()
+
+          return {
+            value: value ? [wrap(value[0]), wrap(value[1])] : value,
+            done
+          }
+        },
+      }
+    },
     add(key) {
       const target = this[RAW_KEY];
       const hasKey = target.has(key);
@@ -223,10 +253,13 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
       }
       return res;
     },
-    forEach(cb) {
+    forEach(cb, thisArg) {
       const target = this[RAW_KEY];
       track(target, ITERATE_KEY);
-      target.forEach(cb);
+
+      target.forEach((v, k) => {
+        cb.call(thisArg, wrap(v), wrap(k));
+      });
     },
   };
   return new Proxy(obj, {
@@ -281,8 +314,8 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
           ? TRIGGER_TYPES.SET
           : TRIGGER_TYPES.ADD
         : Object.prototype.hasOwnProperty.call(target, key)
-        ? TRIGGER_TYPES.SET
-        : TRIGGER_TYPES.ADD;
+          ? TRIGGER_TYPES.SET
+          : TRIGGER_TYPES.ADD;
       const res = Reflect.set(target, key, value, receiver);
       if (target === receiver[RAW_KEY]) {
         // 考虑NaN的情况

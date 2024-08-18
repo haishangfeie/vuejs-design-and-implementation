@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "npm run dev:reactive",
+    "dev": "npm run dev:reactive2",
     "dev:reactive": "serve ./reactive",
     "dev:reactive2": "serve ./reactive2",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
