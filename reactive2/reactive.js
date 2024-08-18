@@ -134,6 +134,22 @@ function trigger(target, key, type, newVal) {
         });
       }
     }
+    if (
+      (type === TRIGGER_TYPES.ADD ||
+        type === TRIGGER_TYPES.DELETE) && Object.prototype.toString.call(target) === '[object Map]'
+    ) {
+      const iterateDeps = depsMap.get(MAP_KEY_ITERATE_KEY);
+      if (iterateDeps) {
+        // 避免无限循环
+        const effects = new Set(iterateDeps);
+        const activeEffect = effectStack[effectStack.length - 1];
+        effects.forEach((effect) => {
+          if (activeEffect !== effect) {
+            effectToRun.add(effect);
+          }
+        });
+      }
+    }
 
     effectToRun.forEach((effect) => {
       if (effect.options.scheduler) {
@@ -146,6 +162,7 @@ function trigger(target, key, type, newVal) {
 }
 
 const ITERATE_KEY = Symbol('iterate');
+const MAP_KEY_ITERATE_KEY = Symbol('map_key_iterate_key')
 const RAW_KEY = Symbol('raw');
 const TRIGGER_TYPES = {
   ADD: 'ADD',
@@ -187,23 +204,68 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
     }
     return val;
   };
-  const mutableInstrumentations = {
-    [Symbol.iterator]() {
-      const target = this[RAW_KEY]
-      const itr = target[Symbol.iterator]()
+  function iterationMethod() {
+    const target = this[RAW_KEY]
+    const itr = target[Symbol.iterator]()
 
-      track(target, ITERATE_KEY)
-      return {
-        next() {
-          let { value, done } = itr.next()
+    track(target, ITERATE_KEY)
+    return {
+      next() {
+        let { value, done } = itr.next()
 
-          return {
-            value: value ? [wrap(value[0]), wrap(value[1])] : value,
-            done
-          }
-        },
+        return {
+          value: value ? [wrap(value[0]), wrap(value[1])] : value,
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
       }
-    },
+    }
+  }
+  function valueIterationMethod() {
+    const target = this[RAW_KEY]
+    const itr = target.values()
+
+    track(target, ITERATE_KEY)
+    return {
+      next() {
+        let { value, done } = itr.next()
+
+        return {
+          value: value ? wrap(value) : value,
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
+      }
+    }
+  }
+  function keysIterationMethod() {
+    const target = this[RAW_KEY]
+    const itr = target.keys()
+
+    track(target, MAP_KEY_ITERATE_KEY)
+    return {
+      next() {
+        let { value, done } = itr.next()
+
+        return {
+          value: value ? wrap(value) : value,
+          done
+        }
+      },
+      [Symbol.iterator]() {
+        return this
+      }
+    }
+  }
+  const mutableInstrumentations = {
+    [Symbol.iterator]: iterationMethod,
+    entries: iterationMethod,
+    values: valueIterationMethod,
+    keys: keysIterationMethod,
     add(key) {
       const target = this[RAW_KEY];
       const hasKey = target.has(key);
@@ -261,6 +323,10 @@ const createReactive = (obj, isShallow = false, isReadonly = false) => {
         cb.call(thisArg, wrap(v), wrap(k));
       });
     },
+    has(key) {
+      const target = this[RAW_KEY] || this
+      return Reflect.has(target, key)
+    }
   };
   return new Proxy(obj, {
     get(target, key, receiver) {

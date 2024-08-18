@@ -836,6 +836,25 @@ describe('响应式', () => {
       p.set('key1', 'value11')
       expect(fn).toHaveBeenCalledTimes(3);
     })
+    test('Map类型使用.keys()方法迭代时，只在新增和删除会触发响应式，修改值不会触发响应式', () => {
+      const p = reactive(new Map([
+        ['key1', 'value1'],
+        ['key2', 'value2']
+      ]))
+
+      const fn = jest.fn(() => {
+        for (const key of p.keys()) {
+        }
+      })
+      effect(fn)
+      expect(fn).toHaveBeenCalledTimes(1)
+      p.set('key2', 'value22') // 不能够触发响应
+      expect(fn).toHaveBeenCalledTimes(1)
+      p.set('key3', 'value3') // 能够触发响应
+      expect(fn).toHaveBeenCalledTimes(2)
+      p.delete('key1')
+      expect(fn).toHaveBeenCalledTimes(3)
+    })
   });
   describe('代理Set', () => {
     test('能从Set的响应式对象中读取到size的值', () => {
